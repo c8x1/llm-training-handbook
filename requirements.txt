@@ -1,0 +1,13 @@
+torch>=2.1.0
+tiktoken>=0.6.0
+transformers>=4.38.0
+trl>=0.8.0
+peft>=0.9.0
+datasets>=2.18.0
+accelerate>=0.27.0
+bitsandbytes>=0.42.0
+wandb>=0.16.0
+matplotlib>=3.8.0
+pandas>=2.2.0
+jupyter-book>=1.0.0
+numpy>=1.26.0

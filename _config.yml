@@ -1,0 +1,20 @@
+title: LLM Training Handbook
+author: LLM Training Handbook Contributors
+copyright: "2026"
+logo: assets/logo.png
+execute:
+  execute_notebooks: "off"
+  timeout: 600
+repository:
+  url: https://github.com/YOUR_USERNAME/llm-training-handbook
+  path_to_book: ""
+  branch: main
+html:
+  use_issues_button: true
+  use_repository_button: true
+  announcement: "本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。"
+parse:
+  myst_enable_extensions:
+    - dollarmath
+    - linkify
+    - substitution

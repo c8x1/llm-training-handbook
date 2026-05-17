@@ -1,0 +1,29 @@
+format: jb-book
+root: intro
+parts:
+  - caption: Part I - 基础架构与预训练
+    chapters:
+      - file: notebooks/ch01_gpt_architecture
+        title: "第1章：GPT 架构拆解"
+      - file: notebooks/ch02_tokenization
+        title: "第2章：Tokenizer 与数据工程"
+      - file: notebooks/ch03_pretraining
+        title: "第3章：预训练实战"
+      - file: notebooks/ch04_distributed_training
+        title: "第4章：分布式训练与效率优化"
+  - caption: Part II - 对齐训练
+    chapters:
+      - file: notebooks/ch05_sft
+        title: "第5章：SFT 指令微调"
+      - file: notebooks/ch06_reward_modeling
+        title: "第6章：Reward Modeling"
+      - file: notebooks/ch07_rlhf_ppo
+        title: "第7章：RLHF (PPO)"
+      - file: notebooks/ch08_dpo
+        title: "第8章：DPO 直接偏好优化"
+  - caption: Part III - 生产部署
+    chapters:
+      - file: notebooks/ch09_inference_optimization
+        title: "第9章：推理优化"
+      - file: notebooks/ch10_full_pipeline
+        title: "第10章：全流程实战"
