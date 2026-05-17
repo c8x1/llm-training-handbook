@@ -27,3 +27,17 @@ parts:
         title: "第9章：推理优化"
       - file: notebooks/ch10_full_pipeline
         title: "第10章：全流程实战"
+  - caption: Part IV - 进阶：走向 SOTA
+    chapters:
+      - file: notebooks/ch11_modern_architecture
+        title: "第11章：现代 Transformer 架构改进"
+      - file: notebooks/ch12_moe_architecture
+        title: "第12章：MoE 混合专家架构"
+      - file: notebooks/ch13_pretraining_engineering
+        title: "第13章：大规模预训练工程"
+      - file: notebooks/ch14_reasoning_grpo
+        title: "第14章：推理模型与 GRPO"
+      - file: notebooks/ch15_long_context_inference
+        title: "第15章：长上下文与高效推理"
+      - file: notebooks/ch16_modern_gpt_build
+        title: "第16章：综合实战 — 从 GPT-2 到现代架构"
