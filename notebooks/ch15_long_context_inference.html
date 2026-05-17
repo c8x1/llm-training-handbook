@@ -1,0 +1,1178 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>第15章：长上下文与高效推理 &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/ch15_long_context_inference';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="第16章：综合实战 — 从 GPT-2 到现代架构" href="ch16_modern_gpt_build.html" />
+    <link rel="prev" title="第14章：推理模型与 GRPO" href="ch14_reasoning_grpo.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch11_modern_architecture.html">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch13_pretraining_engineering.html">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch14_reasoning_grpo.html">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/c8x1/llm-training-handbook/blob/main/notebooks/ch15_long_context_inference.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/notebooks/ch15_long_context_inference.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fnotebooks/ch15_long_context_inference.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/notebooks/ch15_long_context_inference.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>第15章：长上下文与高效推理</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rope">1. RoPE 缩放策略</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">三种主流方法</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">2. 训练时上下文扩展</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ring-attention">3. Ring Attention</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#speculative-decoding">4. Speculative Decoding（投机解码）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vllm-pagedattention">5. vLLM PagedAttention</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kv-cache">KV Cache 内存管理问题</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pagedattention">PagedAttention：借鉴操作系统虚拟内存</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">练习</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">延伸阅读</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="id1">
+<h1>第15章：长上下文与高效推理<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<section id="id2">
+<h2>本章目标<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>理解 4K → 128K → 1M 上下文扩展背后的工程原理</p></li>
+<li><p>掌握 RoPE 缩放、Ring Attention、Speculative Decoding、PagedAttention</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>前置知识<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>复习第11章：RoPE 位置编码</p></li>
+<li><p>复习第9章：推理优化基础（KV Cache）</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">IN_COLAB</span> <span class="o">=</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span>
+<span class="k">if</span> <span class="n">IN_COLAB</span><span class="p">:</span>
+    <span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="n">matplotlib</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;本地环境运行，请确保已按 intro.md 配置好环境&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="rope">
+<h2>1. RoPE 缩放策略<a class="headerlink" href="#rope" title="Link to this heading">#</a></h2>
+<p>RoPE 默认只支持训练时的最大长度 <span class="math notranslate nohighlight">\(L_{train}\)</span>。要在 <span class="math notranslate nohighlight">\(L_{new} &gt; L_{train}\)</span> 上使用，需要缩放策略：</p>
+<section id="id4">
+<h3>三种主流方法<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>方法</p></th>
+<th class="head"><p>核心思想</p></th>
+<th class="head"><p>优势</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Position Interpolation (PI)</p></td>
+<td><p>线性压缩位置到训练范围</p></td>
+<td><p>简单，无微调也能用</p></td>
+</tr>
+<tr class="row-odd"><td><p>NTK-aware interpolation</p></td>
+<td><p>调整频率基数 base</p></td>
+<td><p>保留高频信息</p></td>
+</tr>
+<tr class="row-even"><td><p>YaRN</p></td>
+<td><p>NTK + 注意力温度调整</p></td>
+<td><p>综合效果最好</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a>, <a class="reference external" href="https://arxiv.org/abs/2306.15595">NTK-aware</a></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># 基础 RoPE 函数（来自 Ch11）</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">precompute_rope_freqs</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">head_dim</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">freqs</span><span class="p">,</span> <span class="n">freqs</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_rotary_emb</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span><span class="p">):</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="n">d</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">d</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:]</span>
+    <span class="n">rotated</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="o">-</span><span class="n">x2</span><span class="p">,</span> <span class="n">x1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">cos</span> <span class="o">+</span> <span class="n">rotated</span> <span class="o">*</span> <span class="n">sin</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simple_attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;无位置编码的基础注意力&quot;&quot;&quot;</span>
+    <span class="n">att</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">)</span>
+    <span class="n">att</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">att</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">att</span> <span class="o">@</span> <span class="n">v</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RoPE 基础函数已加载&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 策略1: Position Interpolation (PI)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rope_pi</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Position Interpolation：线性压缩位置。</span>
+<span class="sd">    </span>
+<span class="sd">    将 [0, L_new] 压缩到 [0, L_train]，</span>
+<span class="sd">    保持旋转角度在训练范围内。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">head_dim</span><span class="p">))</span>
+    <span class="c1"># 关键：位置除以 scale_factor</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">scale_factor</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">freqs</span><span class="p">,</span> <span class="n">freqs</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+
+<span class="c1"># 策略2: NTK-aware interpolation</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rope_ntk</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;NTK-aware：动态调整 base 频率。</span>
+<span class="sd">    </span>
+<span class="sd">    不压缩位置，而是增大 base 使得高频分量被保留。</span>
+<span class="sd">    base_new = base * scale_factor ^ (dim / (dim - 2))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base_new</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="p">(</span><span class="n">scale_factor</span> <span class="o">**</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">/</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base_new</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">head_dim</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">freqs</span><span class="p">,</span> <span class="n">freqs</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+
+<span class="c1"># 策略3: YaRN</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">,</span> <span class="n">temp_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;YaRN：NTK + 注意力温度调整。</span>
+<span class="sd">    </span>
+<span class="sd">    在 NTK-aware 基础上，对注意力分数施加温度缩放。</span>
+<span class="sd">    temp_factor &gt; 1 使得注意力更集中在近处。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base_new</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="p">(</span><span class="n">scale_factor</span> <span class="o">**</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">/</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base_new</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">head_dim</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">freqs</span><span class="p">,</span> <span class="n">freqs</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;三种缩放策略函数已定义&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 可视化对比三种缩放策略</span>
+<span class="n">head_dim</span><span class="p">,</span> <span class="n">train_len</span><span class="p">,</span> <span class="n">test_len</span> <span class="o">=</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">256</span>
+<span class="n">scale_factor</span> <span class="o">=</span> <span class="n">test_len</span> <span class="o">/</span> <span class="n">train_len</span>  <span class="c1"># 4x</span>
+
+<span class="n">q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+<span class="n">k</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="c1"># 基准：原始 RoPE（超出训练长度）</span>
+<span class="n">cos_base</span><span class="p">,</span> <span class="n">sin_base</span> <span class="o">=</span> <span class="n">precompute_rope_freqs</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">)</span>
+<span class="n">cos_b</span> <span class="o">=</span> <span class="n">cos_base</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sin_b</span> <span class="o">=</span> <span class="n">sin_base</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">q_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cos_b</span><span class="p">,</span> <span class="n">sin_b</span><span class="p">)</span>
+<span class="n">k_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">cos_b</span><span class="p">,</span> <span class="n">sin_b</span><span class="p">)</span>
+<span class="n">att_base</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_base</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;原始 RoPE（超出训练长度）&#39;</span><span class="p">)</span>
+
+<span class="c1"># PI</span>
+<span class="n">cos_pi</span><span class="p">,</span> <span class="n">sin_pi</span> <span class="o">=</span> <span class="n">rope_pi</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">)</span>
+<span class="n">cos_p</span> <span class="o">=</span> <span class="n">cos_pi</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sin_p</span> <span class="o">=</span> <span class="n">sin_pi</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">q_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cos_p</span><span class="p">,</span> <span class="n">sin_p</span><span class="p">)</span>
+<span class="n">k_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">cos_p</span><span class="p">,</span> <span class="n">sin_p</span><span class="p">)</span>
+<span class="n">att_pi</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_pi</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Position Interpolation&#39;</span><span class="p">)</span>
+
+<span class="c1"># NTK-aware</span>
+<span class="n">cos_ntk</span><span class="p">,</span> <span class="n">sin_ntk</span> <span class="o">=</span> <span class="n">rope_ntk</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">)</span>
+<span class="n">cos_n</span> <span class="o">=</span> <span class="n">cos_ntk</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sin_n</span> <span class="o">=</span> <span class="n">sin_ntk</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">q_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cos_n</span><span class="p">,</span> <span class="n">sin_n</span><span class="p">)</span>
+<span class="n">k_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">cos_n</span><span class="p">,</span> <span class="n">sin_n</span><span class="p">)</span>
+<span class="n">att_ntk</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_ntk</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;NTK-aware Interpolation&#39;</span><span class="p">)</span>
+
+<span class="c1"># YaRN</span>
+<span class="n">cos_yarn</span><span class="p">,</span> <span class="n">sin_yarn</span> <span class="o">=</span> <span class="n">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">temp_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">cos_y</span> <span class="o">=</span> <span class="n">cos_yarn</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sin_y</span> <span class="o">=</span> <span class="n">sin_yarn</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">q_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cos_y</span><span class="p">,</span> <span class="n">sin_y</span><span class="p">)</span>
+<span class="n">k_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">cos_y</span><span class="p">,</span> <span class="n">sin_y</span><span class="p">)</span>
+<span class="n">att_yarn</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_yarn</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;YaRN&#39;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Key 位置&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Query 位置&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;RoPE 缩放策略对比（训练长度=</span><span class="si">{</span><span class="n">train_len</span><span class="si">}</span><span class="s1">, 测试长度=</span><span class="si">{</span><span class="n">test_len</span><span class="si">}</span><span class="s1">）&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="id5">
+<h2>2. 训练时上下文扩展<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<p>实际模型通常采用渐进式策略：</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>阶段</p></th>
+<th class="head"><p>上下文长度</p></th>
+<th class="head"><p>训练 tokens</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Phase 1</p></td>
+<td><p>4K</p></td>
+<td><p>大部分 (T)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Phase 2</p></td>
+<td><p>32K</p></td>
+<td><p>部分 (0.1T)</p></td>
+</tr>
+<tr class="row-even"><td><p>Phase 3</p></td>
+<td><p>128K</p></td>
+<td><p>少量 (10B)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>为什么有效：</strong></p>
+<ul class="simple">
+<li><p>模型先学会短文本的模式（语法、语义）</p></li>
+<li><p>再扩展到长文本（文档级连贯性、长程依赖）</p></li>
+<li><p>大部分计算在短上下文阶段完成，长上下文阶段只做微调</p></li>
+</ul>
+<p>参考：Llama 3.1 技术报告，<a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> 训练细节</p>
+</section>
+<section id="ring-attention">
+<h2>3. Ring Attention<a class="headerlink" href="#ring-attention" title="Link to this heading">#</a></h2>
+<section id="id6">
+<h3>核心思想<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<p>当序列太长（如 1M tokens），单个 GPU 放不下完整的 Q/K/V 矩阵。</p>
+<p>Ring Attention 的解决方案：</p>
+<ol class="arabic simple">
+<li><p>把序列切成 N 段，分配到 N 个 GPU</p></li>
+<li><p>每个 GPU 计算自己那段 Q 与当前 K/V 的注意力</p></li>
+<li><p>K/V 沿着「环形」传递给下一个 GPU</p></li>
+<li><p>累积注意力结果</p></li>
+</ol>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2310.01889">Ring Attention</a> (Liu et al., 2023)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ring Attention 概念演示</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ring_attention_demo</span><span class="p">(</span><span class="n">q_chunks</span><span class="p">,</span> <span class="n">k_chunks</span><span class="p">,</span> <span class="n">v_chunks</span><span class="p">,</span> <span class="n">n_devices</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟 Ring Attention 的计算过程。</span>
+<span class="sd">    </span>
+<span class="sd">    实际实现需要 NVLink/NVSwitch 进行设备间通信，</span>
+<span class="sd">    这里用 CPU 模拟逻辑。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_chunks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">q_chunks</span><span class="p">)</span>
+    <span class="n">head_dim</span> <span class="o">=</span> <span class="n">q_chunks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">outputs</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">q_chunks</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">)]</span>
+    
+    <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_devices</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: &quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">device_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_devices</span><span class="p">):</span>
+            <span class="c1"># 当前设备持有的 KV 块（环形传递）</span>
+            <span class="n">kv_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">device_id</span> <span class="o">+</span> <span class="n">step</span><span class="p">)</span> <span class="o">%</span> <span class="n">n_devices</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="n">q_chunks</span><span class="p">[</span><span class="n">device_id</span><span class="p">]</span>  <span class="c1"># (1, 1, chunk_len, head_dim)</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">k_chunks</span><span class="p">[</span><span class="n">kv_id</span><span class="p">]</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">v_chunks</span><span class="p">[</span><span class="n">kv_id</span><span class="p">]</span>
+            
+            <span class="c1"># 注意：这里简化了 causal mask</span>
+            <span class="n">att</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">outputs</span><span class="p">[</span><span class="n">device_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">outputs</span><span class="p">[</span><span class="n">device_id</span><span class="p">]</span> <span class="o">+</span> <span class="n">att</span> <span class="o">@</span> <span class="n">v</span>
+            
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dev</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">←KV</span><span class="si">{</span><span class="n">kv_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">&quot;  &quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">outputs</span>
+
+<span class="c1"># 模拟 4 个设备，每设备处理 16 个 token</span>
+<span class="n">chunk_len</span><span class="p">,</span> <span class="n">head_dim</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">32</span>
+<span class="n">q_chunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">chunk_len</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+<span class="n">k_chunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">chunk_len</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+<span class="n">v_chunks</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">chunk_len</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Ring Attention 模拟 ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">ring_attention_demo</span><span class="p">(</span><span class="n">q_chunks</span><span class="p">,</span> <span class="n">k_chunks</span><span class="p">,</span> <span class="n">v_chunks</span><span class="p">,</span> <span class="n">n_devices</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">每个设备输出 shape: </span><span class="si">{</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;实际实现中，KV 块通过 NVLink 在设备间环形传递，计算和通信重叠&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="speculative-decoding">
+<h2>4. Speculative Decoding（投机解码）<a class="headerlink" href="#speculative-decoding" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h3>核心思想<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<p>大模型推理慢（每 token 需要一次完整前向传播）。</p>
+<p>Speculative Decoding 用一个小模型做「草稿」，大模型做「验证」：</p>
+<ol class="arabic simple">
+<li><p>Draft 模型快速生成 <span class="math notranslate nohighlight">\(k\)</span> 个 token</p></li>
+<li><p>Target 模型一次前向传播评估所有 <span class="math notranslate nohighlight">\(k\)</span> 个 token</p></li>
+<li><p>接受与 target 分布一致的 token，拒绝不一致的</p></li>
+</ol>
+<p><strong>关键性质：</strong> 最终输出与直接用大模型完全一致（无损加速）。</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2302.01318">Fast Inference from Transformers via Speculative Decoding</a> (Leviathan et al., 2023)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">speculative_decode</span><span class="p">(</span><span class="n">draft_model_call</span><span class="p">,</span> <span class="n">target_model_call</span><span class="p">,</span> <span class="n">prompt_ids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;概念演示 Speculative Decoding。</span>
+<span class="sd">    </span>
+<span class="sd">    draft_model_call/target_model_call: 接受 token ids，返回 logits 的函数</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">generated</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span>
+    <span class="n">total_draft_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">accepted_tokens</span> <span class="o">=</span> <span class="mi">0</span>
+    
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_new_tokens</span><span class="p">:</span>
+        <span class="c1"># Step 1: Draft 模型生成 k 个 token</span>
+        <span class="n">draft_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">draft_probs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+            <span class="n">logits</span> <span class="o">=</span> <span class="n">draft_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+            <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">draft_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="n">draft_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+            <span class="n">current</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="n">total_draft_tokens</span> <span class="o">+=</span> <span class="n">k</span>
+        
+        <span class="c1"># Step 2: Target 模型一次前向传播评估所有 k 个 token</span>
+        <span class="n">target_logits</span> <span class="o">=</span> <span class="n">target_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
+        
+        <span class="c1"># Step 3: 逐个验证</span>
+        <span class="n">n_accepted</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># 简化验证：如果 draft 选的是 target 概率最高的 token，就接受</span>
+            <span class="n">target_top1</span> <span class="o">=</span> <span class="n">target_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">target_top1</span><span class="p">:</span>
+                <span class="n">n_accepted</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># 拒绝：用 target 的选择替代，丢弃后续 draft tokens</span>
+                <span class="k">break</span>
+        
+        <span class="n">accepted_tokens</span> <span class="o">+=</span> <span class="n">n_accepted</span>
+        <span class="c1"># 接受的 token + target 的修正 token</span>
+        <span class="n">correction_token</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">n_accepted</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">draft_tokens</span><span class="p">[:</span><span class="n">n_accepted</span><span class="p">]:</span>
+            <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_accepted</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+            <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correction_token</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">:</span>
+            <span class="k">break</span>
+    
+    <span class="n">acceptance_rate</span> <span class="o">=</span> <span class="n">accepted_tokens</span> <span class="o">/</span> <span class="n">total_draft_tokens</span> <span class="k">if</span> <span class="n">total_draft_tokens</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">generated</span><span class="p">,</span> <span class="n">acceptance_rate</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Speculative Decoding 函数已定义（概念演示版本）&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 用随机 logits 模拟 speculative decoding</span>
+<span class="n">vocab_size</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">draft_call</span><span class="p">(</span><span class="n">ids</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟小模型：随机 logits&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">vocab_size</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">target_call</span><span class="p">(</span><span class="n">ids</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟大模型：稍好的 logits（有一定偏好）&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">),</span> <span class="n">vocab_size</span><span class="p">)</span>
+
+<span class="c1"># 运行演示</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">]</span>
+<span class="n">result</span><span class="p">,</span> <span class="n">acc_rate</span> <span class="o">=</span> <span class="n">speculative_decode</span><span class="p">(</span><span class="n">draft_call</span><span class="p">,</span> <span class="n">target_call</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Prompt: </span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;生成结果: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;生成长度: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="si">}</span><span class="s2"> tokens&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Draft 接受率: </span><span class="si">{</span><span class="n">acc_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">理论加速比 = 1 / (1 - acceptance_rate * (k-1)/k)，k=</span><span class="si">{</span><span class="mi">4</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;实际加速取决于 draft 模型和 target 模型的相似度&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="vllm-pagedattention">
+<h2>5. vLLM PagedAttention<a class="headerlink" href="#vllm-pagedattention" title="Link to this heading">#</a></h2>
+<section id="kv-cache">
+<h3>KV Cache 内存管理问题<a class="headerlink" href="#kv-cache" title="Link to this heading">#</a></h3>
+<p>推理时每个请求都需要 KV Cache，但：</p>
+<ul class="simple">
+<li><p>不同请求长度不同 → 内存碎片严重</p></li>
+<li><p>预分配最大长度 → 大量浪费</p></li>
+</ul>
+</section>
+<section id="pagedattention">
+<h3>PagedAttention：借鉴操作系统虚拟内存<a class="headerlink" href="#pagedattention" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>操作系统概念</p></th>
+<th class="head"><p>PagedAttention 对应</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>虚拟内存页</p></td>
+<td><p>虚拟 KV block</p></td>
+</tr>
+<tr class="row-odd"><td><p>物理内存页</p></td>
+<td><p>物理 KV block</p></td>
+</tr>
+<tr class="row-even"><td><p>页表</p></td>
+<td><p>Block Table</p></td>
+</tr>
+<tr class="row-odd"><td><p>按需分配</p></td>
+<td><p>动态分配 block</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>核心优势：</strong></p>
+<ol class="arabic simple">
+<li><p>非连续内存分配 → 消除碎片</p></li>
+<li><p>按需分配 → 不浪费预留空间</p></li>
+<li><p>共享 block → Prefix caching（相同前缀的请求共享 KV cache）</p></li>
+</ol>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2309.06180">vLLM</a> (Kwon et al., 2023), <a class="reference external" href="https://github.com/vllm-project/vllm">github.com/vllm-project/vllm</a></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">BlockManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;简化的 PagedAttention Block Manager。</span>
+<span class="sd">    </span>
+<span class="sd">    管理物理 block 池，为每个序列动态分配 block。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total_blocks</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">16</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">block_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_blocks</span> <span class="o">=</span> <span class="n">total_blocks</span>
+        <span class="c1"># 可用 block 集合</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">free_blocks</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">total_blocks</span><span class="p">))</span>
+        <span class="c1"># 每个序列的 block 表：seq_id → [物理 block id 列表]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">allocate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_id</span><span class="p">,</span> <span class="n">num_tokens</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;为序列分配足够的 block。&quot;&quot;&quot;</span>
+        <span class="n">num_blocks_needed</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_tokens</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span>
+        <span class="k">if</span> <span class="n">seq_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">current_blocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">[</span><span class="n">seq_id</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks_needed</span> <span class="o">-</span> <span class="n">current_blocks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_blocks</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;OOM: 没有可用的物理 block&quot;</span><span class="p">)</span>
+            <span class="n">block_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_blocks</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block_id</span><span class="p">)</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">free</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;释放序列占用的所有 block。&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">seq_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">block_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">free_blocks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">block_id</span><span class="p">)</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="p">[</span><span class="n">seq_id</span><span class="p">]</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_block_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_id</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;获取序列的 block 表（类似页表）。&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_tables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">seq_id</span><span class="p">,</span> <span class="p">[])</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;当前内存使用状态。&quot;&quot;&quot;</span>
+        <span class="n">used</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_blocks</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">free_blocks</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Block 使用: </span><span class="si">{</span><span class="n">used</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">total_blocks</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">used</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">total_blocks</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<span class="c1"># 演示</span>
+<span class="n">bm</span> <span class="o">=</span> <span class="n">BlockManager</span><span class="p">(</span><span class="n">total_blocks</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;初始状态: </span><span class="si">{</span><span class="n">bm</span><span class="o">.</span><span class="n">status</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 模拟 3 个不同长度的请求</span>
+<span class="n">bm</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="s2">&quot;req_1&quot;</span><span class="p">,</span> <span class="n">num_tokens</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>   <span class="c1"># 需要 4 个 block</span>
+<span class="n">bm</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="s2">&quot;req_2&quot;</span><span class="p">,</span> <span class="n">num_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">)</span>  <span class="c1"># 需要 8 个 block</span>
+<span class="n">bm</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="s2">&quot;req_3&quot;</span><span class="p">,</span> <span class="n">num_tokens</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>   <span class="c1"># 需要 2 个 block</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;3 个请求后: </span><span class="si">{</span><span class="n">bm</span><span class="o">.</span><span class="n">status</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Block Tables:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">seq_id</span><span class="p">,</span> <span class="n">blocks</span> <span class="ow">in</span> <span class="n">bm</span><span class="o">.</span><span class="n">block_tables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">seq_id</span><span class="si">}</span><span class="s2">: 物理块 </span><span class="si">{</span><span class="n">blocks</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 释放一个请求</span>
+<span class="n">bm</span><span class="o">.</span><span class="n">free</span><span class="p">(</span><span class="s2">&quot;req_2&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">释放 req_2 后: </span><span class="si">{</span><span class="n">bm</span><span class="o">.</span><span class="n">status</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;释放的 block 可以立即给新请求使用，没有内存碎片！&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 对比：连续分配 vs PagedAttention</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== 内存使用对比 ===</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 假设：3 个请求，最大长度 512 tokens，block_size=16</span>
+<span class="n">max_seq_len</span> <span class="o">=</span> <span class="mi">512</span>
+<span class="n">block_size</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="n">seq_lengths</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">30</span><span class="p">]</span>
+
+<span class="c1"># 方法1：预分配最大长度（传统方式）</span>
+<span class="n">traditional_blocks</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">max_seq_len</span> <span class="o">+</span> <span class="n">block_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">block_size</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">seq_lengths</span><span class="p">)</span>
+<span class="n">traditional_tokens</span> <span class="o">=</span> <span class="n">traditional_blocks</span> <span class="o">*</span> <span class="n">block_size</span>
+
+<span class="c1"># 方法2：PagedAttention 按需分配</span>
+<span class="n">paged_blocks</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">((</span><span class="n">l</span> <span class="o">+</span> <span class="n">block_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="n">block_size</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">seq_lengths</span><span class="p">)</span>
+<span class="n">paged_tokens</span> <span class="o">=</span> <span class="n">paged_blocks</span> <span class="o">*</span> <span class="n">block_size</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;方法&#39;</span><span class="si">:</span><span class="s2">&lt;20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Blocks&#39;</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Tokens&#39;</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;利用率&#39;</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;预分配最大长度&#39;</span><span class="si">:</span><span class="s2">&lt;20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">traditional_blocks</span><span class="si">:</span><span class="s2">&gt;10d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">traditional_tokens</span><span class="si">:</span><span class="s2">&gt;10d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">seq_lengths</span><span class="p">)</span><span class="o">/</span><span class="n">traditional_tokens</span><span class="si">:</span><span class="s2">&gt;10.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;PagedAttention&#39;</span><span class="si">:</span><span class="s2">&lt;20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">paged_blocks</span><span class="si">:</span><span class="s2">&gt;10d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">paged_tokens</span><span class="si">:</span><span class="s2">&gt;10d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">seq_lengths</span><span class="p">)</span><span class="o">/</span><span class="n">paged_tokens</span><span class="si">:</span><span class="s2">&gt;10.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">节省: </span><span class="si">{</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">paged_blocks</span><span class="o">/</span><span class="n">traditional_blocks</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% blocks&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="id8">
+<h2>练习<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>修改 <code class="docutils literal notranslate"><span class="pre">scale_factor</span></code> 为 8 和 16，观察不同缩放策略的注意力分布变化</p></li>
+<li><p>在 Ring Attention 演示中添加 causal mask，思考跨设备边界如何处理</p></li>
+<li><p>用真实小模型（如 Ch1 的 baby GPT）替换随机 logits，运行 Speculative Decoding</p></li>
+<li><p>修改 <code class="docutils literal notranslate"><span class="pre">BlockManager</span></code> 支持 prefix caching（相同前缀的请求共享 block）</p></li>
+</ol>
+</section>
+<section id="id9">
+<h2>延伸阅读<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a> — 高效 RoPE 上下文扩展</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2306.15595">NTK-aware Interpolation</a> — NTK 感知插值</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2310.01889">Ring Attention</a> — 环形注意力 (Liu et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2302.01318">Speculative Decoding</a> — 投机解码 (Leviathan et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2309.06180">vLLM / PagedAttention</a> — 分页注意力 (Kwon et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://github.com/vllm-project/vllm">vLLM 源码</a> — 工业级实现参考</p></li>
+</ul>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./notebooks"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ch14_reasoning_grpo.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">第14章：推理模型与 GRPO</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ch16_modern_gpt_build.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">第16章：综合实战 — 从 GPT-2 到现代架构</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rope">1. RoPE 缩放策略</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">三种主流方法</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">2. 训练时上下文扩展</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ring-attention">3. Ring Attention</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#speculative-decoding">4. Speculative Decoding（投机解码）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vllm-pagedattention">5. vLLM PagedAttention</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kv-cache">KV Cache 内存管理问题</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pagedattention">PagedAttention：借鉴操作系统虚拟内存</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">练习</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">延伸阅读</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

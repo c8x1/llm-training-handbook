@@ -1,0 +1,900 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>LLM Training Handbook — Advanced Chapters (Part IV) Design Spec &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'docs/superpowers/specs/2026-05-17-advanced-chapters-design';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch11_modern_architecture.html">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch13_pretraining_engineering.html">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch14_reasoning_grpo.html">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch15_long_context_inference.html">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/docs/superpowers/specs/2026-05-17-advanced-chapters-design.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fdocs/superpowers/specs/2026-05-17-advanced-chapters-design.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../../_sources/docs/superpowers/specs/2026-05-17-advanced-chapters-design.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>LLM Training Handbook — Advanced Chapters (Part IV) Design Spec</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-map-additions-to-existing-project">File Map (additions to existing project)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#chapter-breakdown">Chapter Breakdown</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch11-modern-transformer-architecture-improvements">Ch11: Modern Transformer Architecture Improvements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch12-moe-mixture-of-experts-architecture">Ch12: MoE (Mixture-of-Experts) Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch13-large-scale-pretraining-engineering">Ch13: Large-Scale Pretraining Engineering</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch14-reasoning-models-and-grpo">Ch14: Reasoning Models and GRPO</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch15-long-context-and-efficient-inference">Ch15: Long Context and Efficient Inference</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch16-integration-from-gpt-2-to-modern-architecture">Ch16: Integration — From GPT-2 to Modern Architecture</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-design-pattern">Notebook Design Pattern</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#toc-yml-addition">_toc.yml Addition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">Success Criteria</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="llm-training-handbook-advanced-chapters-part-iv-design-spec">
+<h1>LLM Training Handbook — Advanced Chapters (Part IV) Design Spec<a class="headerlink" href="#llm-training-handbook-advanced-chapters-part-iv-design-spec" title="Link to this heading">#</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>6 advanced chapters (Ch11-16) extending the existing LLM Training Handbook. These chapters cover the gap between the GPT-2-style fundamentals taught in Part I-III and current SOTA architectures and methods (DeepSeek-V3, R1, Llama 3).</p>
+<p><strong>Philosophy shift from main chapters:</strong> More theory (50-70%) than Part I-III, but still code-backed. Code style is “read source + hand-write” hybrid: core concepts hand-written, complex components reference existing open-source code.</p>
+<p><strong>Primary reference model:</strong> DeepSeek series (V2/V3/R1)</p>
+<p><strong>Language:</strong> Chinese primary, English technical terms.</p>
+<p><strong>Hardware target:</strong> Most chapters work on CPU for concept demos; GRPO experiment (Ch14) needs Colab T4.</p>
+</section>
+<hr class="docutils" />
+<section id="file-map-additions-to-existing-project">
+<h2>File Map (additions to existing project)<a class="headerlink" href="#file-map-additions-to-existing-project" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Responsibility</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch11_modern_architecture.ipynb</span></code></p></td>
+<td><p>RMSNorm, SwiGLU, RoPE, GQA — modernizing GPT-2</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch12_moe_architecture.ipynb</span></code></p></td>
+<td><p>Mixture-of-Experts, MLA, DeepSeek-V2/V3 innovations</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch13_pretraining_engineering.ipynb</span></code></p></td>
+<td><p>Data engineering, FP8, multi-token prediction</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch14_reasoning_grpo.ipynb</span></code></p></td>
+<td><p>DeepSeek-R1, GRPO, Process Reward Models</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch15_long_context_inference.ipynb</span></code></p></td>
+<td><p>RoPE scaling, Ring Attention, speculative decoding, PagedAttention</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch16_modern_gpt_build.ipynb</span></code></p></td>
+<td><p>Integration: assemble Ch11-15 improvements into one model</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>_toc.yml update:</strong> Add Part IV with 6 chapters.</p>
+</section>
+<hr class="docutils" />
+<section id="chapter-breakdown">
+<h2>Chapter Breakdown<a class="headerlink" href="#chapter-breakdown" title="Link to this heading">#</a></h2>
+<section id="ch11-modern-transformer-architecture-improvements">
+<h3>Ch11: Modern Transformer Architecture Improvements<a class="headerlink" href="#ch11-modern-transformer-architecture-improvements" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Upgrade the Ch1 GPT-2 architecture to 2024-2025 mainstream design.</p>
+<p><strong>Content (50% theory, 50% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>RMSNorm vs LayerNorm</strong></p>
+<ul class="simple">
+<li><p>Theory: Why RMSNorm drops the mean-centering (faster, similar quality)</p></li>
+<li><p>Code: Hand-write RMSNorm (~10 lines)</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/1910.07467">Root Mean Square Layer Normalization</a> (Zhang &amp; Sennrich, 2019)</p></li>
+</ul>
+</li>
+<li><p><strong>SwiGLU vs GELU</strong></p>
+<ul class="simple">
+<li><p>Theory: GLU family, why gating helps, Swish activation</p></li>
+<li><p>Code: Hand-write SwiGLU FFN layer</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2002.05202">GLU Variants Improve Transformer</a> (Shazeer, 2020)</p></li>
+</ul>
+</li>
+<li><p><strong>RoPE (Rotary Position Embedding)</strong></p>
+<ul class="simple">
+<li><p>Theory: Complex rotation intuition, why it enables length extrapolation, vs absolute/relative PE</p></li>
+<li><p>Code: Hand-write RoPE application (~30 lines), compare with absolute PE</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2104.09864">RoFormer</a> (Su et al., 2021)</p></li>
+</ul>
+</li>
+<li><p><strong>GQA (Grouped Query Attention)</strong></p>
+<ul class="simple">
+<li><p>Theory: MHA → GQA → MQA spectrum, KV cache savings</p></li>
+<li><p>Code: Modify Ch1 CausalSelfAttention to support GQA</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2305.13245">GQA</a> (Ainslie et al., 2023)</p></li>
+</ul>
+</li>
+<li><p><strong>Integration</strong></p>
+<ul class="simple">
+<li><p>Assemble all 4 improvements into the Ch1 GPT class</p></li>
+<li><p>Read HuggingFace <code class="docutils literal notranslate"><span class="pre">LlamaModel</span></code> source for comparison: <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py">transformers/models/llama/modeling_llama.py</a></p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Hardware:</strong> CPU OK (small model verification)</p>
+</section>
+<hr class="docutils" />
+<section id="ch12-moe-mixture-of-experts-architecture">
+<h3>Ch12: MoE (Mixture-of-Experts) Architecture<a class="headerlink" href="#ch12-moe-mixture-of-experts-architecture" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Understand the core architectural innovation of DeepSeek-V2/V3.</p>
+<p><strong>Content (60% theory, 40% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Dense to Sparse motivation</strong></p>
+<ul class="simple">
+<li><p>Theory: Why MoE scales parameters without proportional compute cost</p></li>
+<li><p>FLOPs analysis: MoE model with 100B params can run at 10B dense FLOPs</p></li>
+</ul>
+</li>
+<li><p><strong>Basic MoE structure</strong></p>
+<ul class="simple">
+<li><p>Theory: Router (gating network) + N expert FFNs, top-k routing</p></li>
+<li><p>Code: Hand-write simple top-2 MoE layer (~60 lines)</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2101.03961">Switch Transformers</a> (Fedus et al., 2021)</p></li>
+</ul>
+</li>
+<li><p><strong>Load balancing problem</strong></p>
+<ul class="simple">
+<li><p>Theory: Why experts collapse (all tokens go to one expert), auxiliary loss</p></li>
+<li><p>Code: Implement auxiliary load balancing loss</p></li>
+<li><p>Reference: Switch Transformers Section 2.2</p></li>
+</ul>
+</li>
+<li><p><strong>DeepSeek-V2: MLA (Multi-head Latent Attention)</strong></p>
+<ul class="simple">
+<li><p>Theory: Compress K/V to low-dim latent, dramatically reduce KV cache</p></li>
+<li><p>Code: Read DeepSeek-V2 model source, annotate key MLA sections</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2405.04434">DeepSeek-V2</a> Section 2.1</p></li>
+</ul>
+</li>
+<li><p><strong>DeepSeek-V3: Auxiliary-loss-free load balancing</strong></p>
+<ul class="simple">
+<li><p>Theory: Bias-based routing instead of auxiliary loss, why it improves quality</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> Section 2.3</p></li>
+<li><p>Source: <a class="reference external" href="https://github.com/deepseek-ai/DeepSeek-V3">github.com/deepseek-ai/DeepSeek-V3</a></p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Hardware:</strong> CPU OK (small expert count demo)</p>
+</section>
+<hr class="docutils" />
+<section id="ch13-large-scale-pretraining-engineering">
+<h3>Ch13: Large-Scale Pretraining Engineering<a class="headerlink" href="#ch13-large-scale-pretraining-engineering" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Understand why “80% of pretraining is data engineering.”</p>
+<p><strong>Content (70% theory, 30% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Data cleaning pipeline</strong></p>
+<ul class="simple">
+<li><p>Theory: MinHash deduplication, perplexity filtering, quality classifiers, PII removal</p></li>
+<li><p>Code: Hand-write MinHash dedup (~30 lines)</p></li>
+<li><p>Reference: <a class="reference external" href="https://huggingface.co/datasets/HuggingFaceFW/fineweb">FineWeb</a>, <a class="reference external" href="https://arxiv.org/abs/2306.01116">RefinedWeb</a> (Penedo et al., 2023)</p></li>
+</ul>
+</li>
+<li><p><strong>Data mixing ratios</strong></p>
+<ul class="simple">
+<li><p>Theory: How domain proportions (code/math/web/books) affect model capabilities</p></li>
+<li><p>Reference: DoReMi (<a class="reference external" href="https://arxiv.org/abs/2305.10429">arxiv.org/abs/2305.10429</a>), DeepSeek-V3 Section 3.1</p></li>
+</ul>
+</li>
+<li><p><strong>FP8 training</strong></p>
+<ul class="simple">
+<li><p>Theory: E4M3 (forward) vs E5M2 (backward) formats, scaling factor granularity (per-tensor/block/channel)</p></li>
+<li><p>Code: Demo <code class="docutils literal notranslate"><span class="pre">torch.float8_linear</span></code> or <code class="docutils literal notranslate"><span class="pre">transformers</span></code> FP8 quantization on a small matmul</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2209.05433">FP8 Formats for Deep Learning</a> (Micikevicius et al., 2022), DeepSeek-V3 Section 3.3</p></li>
+</ul>
+</li>
+<li><p><strong>Multi-token prediction</strong></p>
+<ul class="simple">
+<li><p>Theory: Predict N future tokens simultaneously, improves training signal efficiency</p></li>
+<li><p>Code: Implement dual-head prediction (next-token + next-2-token) on small GPT</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2404.19737">Multi-token Prediction</a> (Gloeckle et al., 2024)</p></li>
+</ul>
+</li>
+<li><p><strong>Curriculum learning</strong></p>
+<ul class="simple">
+<li><p>Theory: Dynamic data difficulty/domain scheduling during training</p></li>
+<li><p>Reference: DeepSeek-V3 training details</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Hardware:</strong> CPU for data engineering demos; FP8 needs H100/A100 (concept-focused, not hands-on)</p>
+</section>
+<hr class="docutils" />
+<section id="ch14-reasoning-models-and-grpo">
+<h3>Ch14: Reasoning Models and GRPO<a class="headerlink" href="#ch14-reasoning-models-and-grpo" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Understand DeepSeek-R1’s breakthrough — training reasoning via pure RL.</p>
+<p><strong>Content (60% theory, 40% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>From SFT+RLHF to pure RL reasoning</strong></p>
+<ul class="simple">
+<li><p>Theory: DeepSeek-R1-Zero experiment — skip SFT, directly RL-train reasoning</p></li>
+<li><p>Emergence of Chain-of-Thought, self-correction, “aha moments”</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a> Section 2</p></li>
+</ul>
+</li>
+<li><p><strong>GRPO (Group Relative Policy Optimization)</strong></p>
+<ul class="simple">
+<li><p>Theory: Eliminate Value Network — use group baseline instead. Math derivation of GRPO objective</p></li>
+<li><p>Code: Hand-write simplified GRPO loss (~50 lines)</p></li>
+<li><p>Reference: DeepSeek-R1 Section 2.3, <a class="reference external" href="https://huggingface.co/docs/trl/main_classes/grpo_trainer">trl GRPOTrainer</a></p></li>
+</ul>
+</li>
+<li><p><strong>Process Reward Model (PRM)</strong></p>
+<ul class="simple">
+<li><p>Theory: Score each reasoning step vs Outcome RM (score final answer only)</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2305.20050">Let’s Verify Step by Step</a> (Lightman et al., 2023)</p></li>
+</ul>
+</li>
+<li><p><strong>R1 training pipeline</strong></p>
+<ul class="simple">
+<li><p>Theory: Multi-stage: cold-start SFT → RL (GRPO) → rejection sampling → distillation</p></li>
+<li><p>Reference: DeepSeek-R1 Section 3</p></li>
+</ul>
+</li>
+<li><p><strong>Test-time compute scaling</strong></p>
+<ul class="simple">
+<li><p>Theory: More inference compute (search, verification) → better results</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute</a> (Snell et al., 2024)</p></li>
+</ul>
+</li>
+<li><p><strong>Hands-on:</strong> Use trl <code class="docutils literal notranslate"><span class="pre">GRPOTrainer</span></code> to train a small model on math tasks (Colab T4)</p></li>
+</ol>
+<p><strong>Hardware:</strong> Colab T4 (GRPO + Qwen2.5-0.5B + LoRA + GSM8K math problems)</p>
+</section>
+<hr class="docutils" />
+<section id="ch15-long-context-and-efficient-inference">
+<h3>Ch15: Long Context and Efficient Inference<a class="headerlink" href="#ch15-long-context-and-efficient-inference" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Understand the engineering behind 4K → 128K → 1M context extension.</p>
+<p><strong>Content (50% theory, 50% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>RoPE scaling strategies</strong></p>
+<ul class="simple">
+<li><p>Theory: NTK-aware interpolation, YaRN, positional interpolation — how each extends context</p></li>
+<li><p>Code: Implement and compare 3 scaling strategies on attention distribution (~40 lines each)</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a>, <a class="reference external" href="https://arxiv.org/abs/2306.15595">NTK-aware</a></p></li>
+</ul>
+</li>
+<li><p><strong>Training-time context extension</strong></p>
+<ul class="simple">
+<li><p>Theory: Gradually increase context length during training (4K → 32K → 128K)</p></li>
+<li><p>Reference: Llama 3.1 technical report, DeepSeek-V3 training details</p></li>
+</ul>
+</li>
+<li><p><strong>Ring Attention</strong></p>
+<ul class="simple">
+<li><p>Theory: Shard sequences across devices, achieving “infinite context”</p></li>
+<li><p>Code: Conceptual implementation of ring attention pattern</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2310.01889">Ring Attention</a> (Liu et al., 2023)</p></li>
+</ul>
+</li>
+<li><p><strong>Speculative Decoding</strong></p>
+<ul class="simple">
+<li><p>Theory: Small model drafts, large model verifies — speedup without quality loss</p></li>
+<li><p>Code: Implement naive speculative decoding with draft/target pair</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2302.01318">Speculative Decoding</a> (Leviathan et al., 2023)</p></li>
+</ul>
+</li>
+<li><p><strong>vLLM PagedAttention</strong></p>
+<ul class="simple">
+<li><p>Theory: KV cache memory management inspired by OS virtual memory paging</p></li>
+<li><p>Code: Read vLLM <code class="docutils literal notranslate"><span class="pre">block_manager.py</span></code> source, annotate key data structures</p></li>
+<li><p>Reference: <a class="reference external" href="https://arxiv.org/abs/2309.06180">vLLM</a> (Kwon et al., 2023), <a class="reference external" href="https://github.com/vllm-project/vllm">github.com/vllm-project/vllm</a></p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Hardware:</strong> CPU for concept demos; long context experiments need Colab T4</p>
+</section>
+<hr class="docutils" />
+<section id="ch16-integration-from-gpt-2-to-modern-architecture">
+<h3>Ch16: Integration — From GPT-2 to Modern Architecture<a class="headerlink" href="#ch16-integration-from-gpt-2-to-modern-architecture" title="Link to this heading">#</a></h3>
+<p><strong>Objective:</strong> Assemble Ch11-15 improvements into a single model, compare with GPT-2 baseline.</p>
+<p><strong>Content (20% theory, 80% code):</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Architecture upgrade</strong></p>
+<ul class="simple">
+<li><p>Take Ch1 GPT class, apply: LayerNorm→RMSNorm, GELU→SwiGLU, abs PE→RoPE, MHA→GQA</p></li>
+<li><p>Each upgrade from Ch11, integrated into one coherent model class</p></li>
+</ul>
+</li>
+<li><p><strong>Add MoE</strong></p>
+<ul class="simple">
+<li><p>Replace FFN layers with MoE structure from Ch12</p></li>
+</ul>
+</li>
+<li><p><strong>Training comparison</strong></p>
+<ul class="simple">
+<li><p>Same data (Shakespeare), same compute budget</p></li>
+<li><p>Compare loss curves: GPT-2 architecture vs modern architecture</p></li>
+<li><p>Analyze: does modern architecture converge faster/lower?</p></li>
+</ul>
+</li>
+<li><p><strong>GRPO alignment</strong></p>
+<ul class="simple">
+<li><p>Apply GRPO from Ch14 to the modern architecture model</p></li>
+<li><p>Compare reasoning capability before/after alignment</p></li>
+</ul>
+</li>
+<li><p><strong>Roadmap</strong></p>
+<ul class="simple">
+<li><p>Summary of the full 16-chapter journey</p></li>
+<li><p>Directions for continued learning: model distillation, multimodal, agent frameworks</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Hardware:</strong> Colab T4 (LoRA + small model + GRPO)</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="notebook-design-pattern">
+<h2>Notebook Design Pattern<a class="headerlink" href="#notebook-design-pattern" title="Link to this heading">#</a></h2>
+<p>Same 7-part structure as Part I-III, but adjusted for theory-heavy content:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>1. [Markdown] Chapter objectives + prerequisites (which main chapters to review)
+2. [Code] Environment setup (same Colab/local detection)
+3. [Markdown] Theory deep-dive with paper references and key equations
+4. [Code] Concept implementation (hand-written or source reading)
+5. [Markdown] Analysis and intuition — why this improvement matters
+6. [Code] Hands-on experiment (where feasible)
+7. [Markdown] Paper references + recommended reading
+</pre></div>
+</div>
+</section>
+<section id="toc-yml-addition">
+<h2>_toc.yml Addition<a class="headerlink" href="#toc-yml-addition" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">caption</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Part IV - 进阶：走向 SOTA</span>
+<span class="w">    </span><span class="nt">chapters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch11_modern_architecture</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第11章：现代</span><span class="nv"> </span><span class="s">Transformer</span><span class="nv"> </span><span class="s">架构改进&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch12_moe_architecture</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第12章：MoE</span><span class="nv"> </span><span class="s">混合专家架构&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch13_pretraining_engineering</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第13章：大规模预训练工程&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch14_reasoning_grpo</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第14章：推理模型与</span><span class="nv"> </span><span class="s">GRPO&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch15_long_context_inference</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第15章：长上下文与高效推理&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch16_modern_gpt_build</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第16章：综合实战</span><span class="nv"> </span><span class="s">—</span><span class="nv"> </span><span class="s">从</span><span class="nv"> </span><span class="s">GPT-2</span><span class="nv"> </span><span class="s">到现代架构&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="success-criteria">
+<h2>Success Criteria<a class="headerlink" href="#success-criteria" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>Every technical claim has an explicit paper reference (arxiv URL)</p></li>
+<li><p>Code demos run on CPU (Ch11-13, Ch15) or Colab T4 (Ch14, Ch16)</p></li>
+<li><p>Each chapter clearly shows what changed vs GPT-2 and why</p></li>
+<li><p>All 6 chapters build on each other progressively</p></li>
+<li><p>Ch16 successfully integrates all improvements into a working model</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./docs/superpowers/specs"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-map-additions-to-existing-project">File Map (additions to existing project)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#chapter-breakdown">Chapter Breakdown</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch11-modern-transformer-architecture-improvements">Ch11: Modern Transformer Architecture Improvements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch12-moe-mixture-of-experts-architecture">Ch12: MoE (Mixture-of-Experts) Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch13-large-scale-pretraining-engineering">Ch13: Large-Scale Pretraining Engineering</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch14-reasoning-models-and-grpo">Ch14: Reasoning Models and GRPO</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch15-long-context-and-efficient-inference">Ch15: Long Context and Efficient Inference</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ch16-integration-from-gpt-2-to-modern-architecture">Ch16: Integration — From GPT-2 to Modern Architecture</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-design-pattern">Notebook Design Pattern</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#toc-yml-addition">_toc.yml Addition</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">Success Criteria</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

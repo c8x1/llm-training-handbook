@@ -1,0 +1,1340 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Advanced Chapters (Ch11-16) Implementation Plan &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'docs/superpowers/plans/2026-05-17-advanced-chapters';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch11_modern_architecture.html">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch13_pretraining_engineering.html">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch14_reasoning_grpo.html">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch15_long_context_inference.html">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/docs/superpowers/plans/2026-05-17-advanced-chapters.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fdocs/superpowers/plans/2026-05-17-advanced-chapters.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../../_sources/docs/superpowers/plans/2026-05-17-advanced-chapters.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Advanced Chapters (Ch11-16) Implementation Plan</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-structure">File Structure</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-template">Notebook Template</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-ch11-modern-transformer-architecture-improvements">Task 1: Ch11 — Modern Transformer Architecture Improvements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-ch12-moe-architecture">Task 2: Ch12 — MoE Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-ch13-large-scale-pretraining-engineering">Task 3: Ch13 — Large-Scale Pretraining Engineering</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-ch14-reasoning-models-and-grpo">Task 4: Ch14 — Reasoning Models and GRPO</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-5-ch15-long-context-and-efficient-inference">Task 5: Ch15 — Long Context and Efficient Inference</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-6-ch16-integration-from-gpt-2-to-modern-architecture">Task 6: Ch16 — Integration: From GPT-2 to Modern Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-7-update-toc-yml">Task 7: Update _toc.yml</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-8-build-verification">Task 8: Build Verification</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-9-commit-and-push">Task 9: Commit and Push</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-checklist-review-agent-output-against-this">Quality Checklist (Review Agent Output Against This)</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="advanced-chapters-ch11-16-implementation-plan">
+<h1>Advanced Chapters (Ch11-16) Implementation Plan<a class="headerlink" href="#advanced-chapters-ch11-16-implementation-plan" title="Link to this heading">#</a></h1>
+<blockquote>
+<div><p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code class="docutils literal notranslate"><span class="pre">-</span> <span class="pre">[</span> <span class="pre">]</span></code>) syntax for tracking.</p>
+</div></blockquote>
+<p><strong>Goal:</strong> Add 6 advanced chapter notebooks (Part IV) to the LLM Training Handbook covering modern architecture, MoE, pretraining engineering, GRPO, long context, and integration.</p>
+<p><strong>Architecture:</strong> Each notebook is a self-contained Jupyter notebook following the existing 7-part structure. Notebooks are theory-heavy (50-70%) with hand-written code demos. Primary reference: DeepSeek series (V2/V3/R1).</p>
+<p><strong>Tech Stack:</strong> PyTorch, matplotlib, trl (Ch14/Ch16), numpy (Ch13). All demos run on CPU except Ch14/Ch16 GRPO sections (Colab T4).</p>
+<hr class="docutils" />
+<section id="file-structure">
+<h2>File Structure<a class="headerlink" href="#file-structure" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Responsibility</p></th>
+<th class="head"><p>Status</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch11_modern_architecture.ipynb</span></code></p></td>
+<td><p>RMSNorm, SwiGLU, RoPE, GQA — modernizing GPT-2</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch12_moe_architecture.ipynb</span></code></p></td>
+<td><p>MoE routing, load balancing, MLA, DeepSeek-V3</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch13_pretraining_engineering.ipynb</span></code></p></td>
+<td><p>MinHash dedup, data mixing, FP8, multi-token prediction</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch14_reasoning_grpo.ipynb</span></code></p></td>
+<td><p>DeepSeek-R1, GRPO loss, PRM, test-time compute</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch15_long_context_inference.ipynb</span></code></p></td>
+<td><p>RoPE scaling, Ring Attention, speculative decoding, PagedAttention</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">notebooks/ch16_modern_gpt_build.ipynb</span></code></p></td>
+<td><p>Integration: assemble Ch11-15 into one model, train + compare</p></td>
+<td><p>Pending</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_toc.yml</span></code></p></td>
+<td><p>Add Part IV section with 6 chapter entries</p></td>
+<td><p>Pending</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="notebook-template">
+<h2>Notebook Template<a class="headerlink" href="#notebook-template" title="Link to this heading">#</a></h2>
+<p>Every notebook MUST follow this structure (matching ch01-ch10 pattern):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Cell 0:  [markdown] Title + objectives + prerequisites (which chapters to review)
+Cell 1:  [code]     Environment setup (Colab detection, pip install, data download)
+Cell 2+:  [markdown + code] alternating — theory sections with paper references, then code implementation
+Penultimate: [code]  Hands-on experiment or integration demo
+Last:    [markdown] Exercises + paper references with arxiv URLs
+</pre></div>
+</div>
+<p>Notebook metadata:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;kernelspec&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;display_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Python 3&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python3&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;language_info&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.10.0&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Language: Chinese markdown text, English technical terms (RMSNorm, SwiGLU, etc.), Chinese code comments.</p>
+<hr class="docutils" />
+<section id="task-1-ch11-modern-transformer-architecture-improvements">
+<h3>Task 1: Ch11 — Modern Transformer Architecture Improvements<a class="headerlink" href="#task-1-ch11-modern-transformer-architecture-improvements" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch11_modern_architecture.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~22-25 cells (50% theory, 50% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 5 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第11章：现代</span> <span class="pre">Transformer</span> <span class="pre">架构改进</span></code>, objectives, prerequisites (Ch1)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup (Colab/local detection)</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">RMSNorm</span> <span class="pre">vs</span> <span class="pre">LayerNorm</span></code> — theory: formula, why drop mean-centering</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>code</p></td>
+<td><p>Hand-write <code class="docutils literal notranslate"><span class="pre">RMSNorm</span></code> class (~10 lines): <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">*</span> <span class="pre">weight</span> <span class="pre">/</span> <span class="pre">sqrt(mean(x^2)</span> <span class="pre">+</span> <span class="pre">eps)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>code</p></td>
+<td><p>Compare LayerNorm vs RMSNorm: same input, show output difference and param count</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">SwiGLU</span> <span class="pre">vs</span> <span class="pre">GELU</span></code> — theory: GLU family, Swish activation, gating</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>code</p></td>
+<td><p>Hand-write <code class="docutils literal notranslate"><span class="pre">SwiGLUFFN</span></code> class: <code class="docutils literal notranslate"><span class="pre">W_gate</span></code>, <code class="docutils literal notranslate"><span class="pre">W_up</span></code>, <code class="docutils literal notranslate"><span class="pre">W_down</span></code> with SiLU activation</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">RoPE</span> <span class="pre">(Rotary</span> <span class="pre">Position</span> <span class="pre">Embedding)</span></code> — theory: complex rotation, relative position</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>code</p></td>
+<td><p>Hand-write <code class="docutils literal notranslate"><span class="pre">apply_rotary_emb</span></code> function (~30 lines): precompute freqs, apply rotation to Q and K</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p>Demo: compare RoPE vs absolute PE attention distribution on same input</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">GQA</span> <span class="pre">(Grouped</span> <span class="pre">Query</span> <span class="pre">Attention)</span></code> — theory: MHA→GQA→MQA spectrum, KV savings</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>code</p></td>
+<td><p>Hand-write <code class="docutils literal notranslate"><span class="pre">GroupedQueryAttention</span></code> class: <code class="docutils literal notranslate"><span class="pre">n_kv_heads</span></code> param, repeat KV heads</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>code</p></td>
+<td><p>Show KV cache size comparison: MHA(12h) vs GQA(4kv) vs MQA(1kv) with numbers</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">整合：ModernGPT</span></code> — combine all 4 improvements</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModernBlock</span></code> class: RMSNorm + GQA + RoPE + SwiGLU</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModernGPT</span></code> class: full model with all upgrades</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>code</p></td>
+<td><p>Compare param count: GPT-2 config vs Modern config</p></td>
+</tr>
+<tr class="row-odd"><td><p>17</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (4 arxiv URLs + Llama source link)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>RMSNorm: <code class="docutils literal notranslate"><span class="pre">nn.Parameter(weight)</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_embd,)</span></code>, no bias, no mean subtraction</p></li>
+<li><p>SwiGLU: 3 linear layers <code class="docutils literal notranslate"><span class="pre">c_gate</span></code>, <code class="docutils literal notranslate"><span class="pre">c_up</span></code>, <code class="docutils literal notranslate"><span class="pre">c_down</span></code> with <code class="docutils literal notranslate"><span class="pre">F.silu(c_gate(x))</span> <span class="pre">*</span> <span class="pre">c_up(x)</span></code> pattern</p></li>
+<li><p>RoPE: precompute <code class="docutils literal notranslate"><span class="pre">torch.outer(positions,</span> <span class="pre">freqs)</span></code> → cos/sin → apply rotation <code class="docutils literal notranslate"><span class="pre">(q</span> <span class="pre">*</span> <span class="pre">cos)</span> <span class="pre">+</span> <span class="pre">(rotate_half(q)</span> <span class="pre">*</span> <span class="pre">sin)</span></code></p></li>
+<li><p>GQA: <code class="docutils literal notranslate"><span class="pre">n_kv_heads</span></code> ≤ <code class="docutils literal notranslate"><span class="pre">n_head</span></code>, repeat_interleave K/V to match <code class="docutils literal notranslate"><span class="pre">n_head</span></code> groups</p></li>
+<li><p>All baby configs: <code class="docutils literal notranslate"><span class="pre">n_embd=128,</span> <span class="pre">n_head=4,</span> <span class="pre">block_size=128</span></code> for CPU</p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">json;</span> <span class="pre">json.load(open('notebooks/ch11_modern_architecture.ipynb','r',encoding='utf-8'));</span> <span class="pre">print('OK')&quot;</span></code>
+Expected: <code class="docutils literal notranslate"><span class="pre">OK</span></code></p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Verify cell count ≥ 17</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">json;</span> <span class="pre">nb=json.load(open('notebooks/ch11_modern_architecture.ipynb','r',encoding='utf-8'));</span> <span class="pre">print(len(nb['cells']))&quot;</span></code>
+Expected: number ≥ 17</p>
+</section>
+<hr class="docutils" />
+<section id="task-2-ch12-moe-architecture">
+<h3>Task 2: Ch12 — MoE Architecture<a class="headerlink" href="#task-2-ch12-moe-architecture" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch12_moe_architecture.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~20-23 cells (60% theory, 40% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 5 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第12章：MoE</span> <span class="pre">混合专家架构</span></code>, objectives, prerequisites (Ch1, Ch11)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">从</span> <span class="pre">Dense</span> <span class="pre">到</span> <span class="pre">Sparse</span></code> — FLOPs analysis, why MoE scales params without compute</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>code</p></td>
+<td><p>FLOPs comparison: dense 100B vs MoE 100B (10B active) calculation</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">基本</span> <span class="pre">MoE</span> <span class="pre">结构</span></code> — Router + N expert FFNs, top-k</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MoELayer</span></code> class: router Linear + N expert FFNs, top-2 routing (~60 lines)</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>code</p></td>
+<td><p>Demo: run MoELayer on random input, show routing distribution</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">负载均衡问题</span></code> — expert collapse, auxiliary loss</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>code</p></td>
+<td><p>Show collapse: train MoE without balance loss, show all tokens → 1 expert</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">load_balance_loss</span></code> function: <code class="docutils literal notranslate"><span class="pre">num_experts</span> <span class="pre">*</span> <span class="pre">sum(f_i</span> <span class="pre">*</span> <span class="pre">P_i)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">DeepSeek-V2:</span> <span class="pre">MLA</span> <span class="pre">(Multi-head</span> <span class="pre">Latent</span> <span class="pre">Attention)</span></code> — compress KV to latent</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>code</p></td>
+<td><p>Simplified MLA: <code class="docutils literal notranslate"><span class="pre">W_kv_down</span></code> (compress) + <code class="docutils literal notranslate"><span class="pre">W_kv_up</span></code> (decompress), show KV cache ratio</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">DeepSeek-V3:</span> <span class="pre">无辅助损失的负载均衡</span></code> — bias-based routing</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>code</p></td>
+<td><p>Bias-based routing: add learnable bias to router logits, compare convergence</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (Switch, DeepSeek-V2/V3, GShard)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>MoELayer: <code class="docutils literal notranslate"><span class="pre">num_experts=4</span></code>, top-k=2, each expert is a simple 2-layer FFN</p></li>
+<li><p>Router: <code class="docutils literal notranslate"><span class="pre">nn.Linear(n_embd,</span> <span class="pre">num_experts)</span></code> → softmax → <code class="docutils literal notranslate"><span class="pre">torch.topk(k=2)</span></code></p></li>
+<li><p>Auxiliary loss: <code class="docutils literal notranslate"><span class="pre">num_experts</span> <span class="pre">*</span> <span class="pre">sum(f_i</span> <span class="pre">*</span> <span class="pre">P_i)</span></code> where <code class="docutils literal notranslate"><span class="pre">f_i</span> <span class="pre">=</span> <span class="pre">tokens_per_expert</span> <span class="pre">/</span> <span class="pre">total_tokens</span></code></p></li>
+<li><p>MLA: down-project K,V to <code class="docutils literal notranslate"><span class="pre">kv_dim</span></code> (e.g., 128→64→128), show cache savings ratio</p></li>
+<li><p>Baby configs: <code class="docutils literal notranslate"><span class="pre">n_embd=128,</span> <span class="pre">num_experts=4</span></code></p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON + cell count ≥ 14</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-3-ch13-large-scale-pretraining-engineering">
+<h3>Task 3: Ch13 — Large-Scale Pretraining Engineering<a class="headerlink" href="#task-3-ch13-large-scale-pretraining-engineering" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch13_pretraining_engineering.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~18-22 cells (70% theory, 30% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 5 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第13章：大规模预训练工程</span></code>, objectives, prerequisites (Ch3, Ch4)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">数据清洗流水线</span></code> — MinHash, perplexity filtering, quality, PII</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>md</p></td>
+<td><p>MinHash algorithm explanation: shingling → hash → min signature → Jaccard</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MinHashDedup</span></code> class: shingling, hash functions, signature matrix, Jaccard similarity (~30 lines)</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>code</p></td>
+<td><p>Demo: create 5 toy documents, find near-duplicates with MinHash</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">数据混合比例</span></code> — domain proportions, DoReMi algorithm</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>md</p></td>
+<td><p>DeepSeek-V3 data composition breakdown</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">FP8</span> <span class="pre">训练</span></code> — E4M3 vs E5M2, scaling factor granularity</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p>Simulate FP8 quantization: clamp to E4M3/E5M2 range, show dequantize error</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">Multi-token</span> <span class="pre">Prediction</span></code> — predict N future tokens, training signal efficiency</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MultiTokenHead</span></code>: shared backbone + N linear heads, <code class="docutils literal notranslate"><span class="pre">loss</span> <span class="pre">=</span> <span class="pre">sum(weight_i</span> <span class="pre">*</span> <span class="pre">loss_i)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">课程学习</span></code> — dynamic difficulty scheduling</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (FineWeb, RefinedWeb, DoReMi, FP8, Multi-token)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>MinHash: <code class="docutils literal notranslate"><span class="pre">hashlib.sha256</span></code>, character shingles, N hash functions via <code class="docutils literal notranslate"><span class="pre">hash(seed</span> <span class="pre">+</span> <span class="pre">shingle)</span></code></p></li>
+<li><p>FP8 simulation: define E4M3 range [-448, 448] and E5M2 range [-57344, 57344], quantize-dequantize</p></li>
+<li><p>Multi-token: baby GPT backbone (2 layers), 2 prediction heads (next-token + next-2-token)</p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON + cell count ≥ 13</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-4-ch14-reasoning-models-and-grpo">
+<h3>Task 4: Ch14 — Reasoning Models and GRPO<a class="headerlink" href="#task-4-ch14-reasoning-models-and-grpo" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch14_reasoning_grpo.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~20-25 cells (60% theory, 40% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 6 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第14章：推理模型与</span> <span class="pre">GRPO</span></code>, objectives, prerequisites (Ch7, Ch8)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup (include <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">trl</span> <span class="pre">peft</span> <span class="pre">datasets</span></code> for Colab)</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">从</span> <span class="pre">SFT+RLHF</span> <span class="pre">到纯</span> <span class="pre">RL</span> <span class="pre">推理</span></code> — R1-Zero, CoT emergence, aha moments</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>md</p></td>
+<td><p>Key quotes/observations from DeepSeek-R1 paper about emergent behaviors</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">GRPO</span> <span class="pre">(Group</span> <span class="pre">Relative</span> <span class="pre">Policy</span> <span class="pre">Optimization)</span></code> — eliminate value network</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>md</p></td>
+<td><p>Math: GRPO objective derivation, group baseline, clipped surrogate</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">compute_grpo_loss</span></code> function: sample G responses → group normalize → clipped loss (~50 lines)</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>code</p></td>
+<td><p>Demo: simulate GRPO with toy rewards, show advantage computation</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">Process</span> <span class="pre">Reward</span> <span class="pre">Model</span> <span class="pre">(PRM)</span></code> — step-level vs outcome-level reward</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p>Compare ORM (1 score) vs PRM (N scores per step) with mock reasoning chain</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">R1</span> <span class="pre">训练流水线</span></code> — cold-start SFT → RL → rejection sampling → distillation</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>md</p></td>
+<td><p>Pipeline diagram in text with 4 stages</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">Test-time</span> <span class="pre">Compute</span> <span class="pre">Scaling</span></code> — majority voting, best-of-N, tree search</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>code</p></td>
+<td><p>Demo majority voting: generate N solutions, vote on answer</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">6.</span> <span class="pre">实战：GRPO</span> <span class="pre">训练</span></code> — trl GRPOTrainer + Qwen2.5-0.5B</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>code</p></td>
+<td><p>GRPOTrainer setup: load model, define reward function (math correctness), configure training</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>code</p></td>
+<td><p>Note: needs Colab T4, show expected output format</p></td>
+</tr>
+<tr class="row-odd"><td><p>17</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (R1, PRM, test-time compute, trl)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>GRPO loss: generate G=4 mock responses, compute <code class="docutils literal notranslate"><span class="pre">advantage</span> <span class="pre">=</span> <span class="pre">(reward</span> <span class="pre">-</span> <span class="pre">mean)</span> <span class="pre">/</span> <span class="pre">(std</span> <span class="pre">+</span> <span class="pre">eps)</span></code>, clipped ratio</p></li>
+<li><p>PRM vs ORM: mock a 5-step reasoning chain, show PRM scores each step, ORM scores only final</p></li>
+<li><p>GRPOTrainer: use <code class="docutils literal notranslate"><span class="pre">trl.GRPOTrainer</span></code> API, <code class="docutils literal notranslate"><span class="pre">reward_fn</span></code> checks <code class="docutils literal notranslate"><span class="pre">float(answer)</span> <span class="pre">==</span> <span class="pre">float(target)</span></code></p></li>
+<li><p>Graceful no-GPU fallback: wrap in try/except, print “需要 Colab T4 GPU” message</p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON + cell count ≥ 17</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-5-ch15-long-context-and-efficient-inference">
+<h3>Task 5: Ch15 — Long Context and Efficient Inference<a class="headerlink" href="#task-5-ch15-long-context-and-efficient-inference" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch15_long_context_inference.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~20-25 cells (50% theory, 50% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 5 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第15章：长上下文与高效推理</span></code>, objectives, prerequisites (Ch11, Ch9)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">RoPE</span> <span class="pre">缩放策略</span></code> — PI, NTK-aware, YaRN</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">positional_interpolation</span></code>: scale positions from [0, L_new] to [0, L_train]</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ntk_aware_scaling</span></code>: adjust base frequency <code class="docutils literal notranslate"><span class="pre">base</span> <span class="pre">*</span> <span class="pre">(scale_factor)</span> <span class="pre">**</span> <span class="pre">(dim</span> <span class="pre">/</span> <span class="pre">(dim-2))</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yarn_scaling</span></code>: NTK + temperature adjustment on attention</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>code</p></td>
+<td><p>Compare: apply all 3 to RoPE, visualize attention patterns with matplotlib heatmap</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">训练时上下文扩展</span></code> — progressive 4K→32K→128K schedule</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">Ring</span> <span class="pre">Attention</span></code> — shard sequence across devices</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p>Simulate ring attention: 4 “devices” each process a chunk, pass KV in ring order</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">Speculative</span> <span class="pre">Decoding</span></code> — draft model + target model</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>code</p></td>
+<td><p>Naive speculative decoding: draft generates k=4 tokens, target verifies in 1 forward pass</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>code</p></td>
+<td><p>Calculate acceptance rate and theoretical speedup</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">vLLM</span> <span class="pre">PagedAttention</span></code> — KV cache as virtual memory pages</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>md</p></td>
+<td><p>Data structures: block table, physical blocks, virtual blocks, analogy with OS paging</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>code</p></td>
+<td><p>Simple block manager simulation: allocate/free KV blocks, show fragmentation avoidance</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (YaRN, NTK, Ring Attention, Speculative, vLLM)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>RoPE scaling: use baby model (n_embd=64, n_head=4), show attention heatmap for extended length</p></li>
+<li><p>Ring attention: loop over 4 “devices”, each computes attention on its chunk, accumulate results</p></li>
+<li><p>Speculative decoding: 2 small GPT models (different sizes), draft k tokens, verify with target</p></li>
+<li><p>PagedAttention: <code class="docutils literal notranslate"><span class="pre">BlockManager</span></code> class with <code class="docutils literal notranslate"><span class="pre">allocate</span></code>, <code class="docutils literal notranslate"><span class="pre">free</span></code>, <code class="docutils literal notranslate"><span class="pre">append</span></code> methods, page_size=16</p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON + cell count ≥ 16</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-6-ch16-integration-from-gpt-2-to-modern-architecture">
+<h3>Task 6: Ch16 — Integration: From GPT-2 to Modern Architecture<a class="headerlink" href="#task-6-ch16-integration-from-gpt-2-to-modern-architecture" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Create: <code class="docutils literal notranslate"><span class="pre">notebooks/ch16_modern_gpt_build.ipynb</span></code></p></li>
+</ul>
+<p><strong>Target cells:</strong> ~25-30 cells (20% theory, 80% code)</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Write notebook with 5 sections</strong></p></li>
+</ul>
+<p>Section layout:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cell</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>md</p></td>
+<td><p>Title <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">第16章：综合实战</span> <span class="pre">—</span> <span class="pre">从</span> <span class="pre">GPT-2</span> <span class="pre">到现代架构</span></code>, objectives, prerequisites (Ch11-15)</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>code</p></td>
+<td><p>Environment setup (include data download for Shakespeare)</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">1.</span> <span class="pre">架构升级</span></code> — 4 improvements from Ch11</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>code</p></td>
+<td><p>Copy <code class="docutils literal notranslate"><span class="pre">RMSNorm</span></code>, <code class="docutils literal notranslate"><span class="pre">SwiGLUFFN</span></code>, <code class="docutils literal notranslate"><span class="pre">apply_rotary_emb</span></code>, <code class="docutils literal notranslate"><span class="pre">GroupedQueryAttention</span></code> from Ch11</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModernBlock</span></code>: RMSNorm + GQA + RoPE + SwiGLU</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModernGPT</span></code>: token emb (no position emb — RoPE handles it) + N × ModernBlock + RMSNorm + head</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>code</p></td>
+<td><p>Verify: forward pass on random input, compare params vs GPT-2</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">2.</span> <span class="pre">添加</span> <span class="pre">MoE</span></code> — from Ch12</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>code</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ModernMoEGPT</span></code>: replace SwiGLUFFN with MoELayer in ModernBlock</p></td>
+</tr>
+<tr class="row-odd"><td><p>9</p></td>
+<td><p>code</p></td>
+<td><p>Compare params: ModernGPT (dense) vs ModernMoEGPT (sparse, same active params)</p></td>
+</tr>
+<tr class="row-even"><td><p>10</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">3.</span> <span class="pre">训练对比</span></code> — same data, same budget</p></td>
+</tr>
+<tr class="row-odd"><td><p>11</p></td>
+<td><p>code</p></td>
+<td><p>Load Shakespeare data, create character-level encoding</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>code</p></td>
+<td><p>Define training loop: AdamW, cosine LR, gradient accumulation</p></td>
+</tr>
+<tr class="row-odd"><td><p>13</p></td>
+<td><p>code</p></td>
+<td><p>Train GPT-2 baseline (baby config) for 500 steps, record loss every 50</p></td>
+</tr>
+<tr class="row-even"><td><p>14</p></td>
+<td><p>code</p></td>
+<td><p>Train ModernGPT (baby config) for 500 steps, record loss every 50</p></td>
+</tr>
+<tr class="row-odd"><td><p>15</p></td>
+<td><p>code</p></td>
+<td><p>Plot loss curves comparison with matplotlib</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>md</p></td>
+<td><p>Analysis: convergence speed, final loss, parameter efficiency</p></td>
+</tr>
+<tr class="row-odd"><td><p>17</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">4.</span> <span class="pre">GRPO</span> <span class="pre">对齐</span></code> — from Ch14</p></td>
+</tr>
+<tr class="row-even"><td><p>18</p></td>
+<td><p>code</p></td>
+<td><p>GRPOTrainer setup code for ModernGPT (conceptual, needs T4)</p></td>
+</tr>
+<tr class="row-odd"><td><p>19</p></td>
+<td><p>md</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">##</span> <span class="pre">5.</span> <span class="pre">路线图</span></code> — 16-chapter summary, future directions</p></td>
+</tr>
+<tr class="row-even"><td><p>20</p></td>
+<td><p>md</p></td>
+<td><p>Summary table: Ch1-10 fundamentals, Ch11-15 advanced, next steps</p></td>
+</tr>
+<tr class="row-odd"><td><p>21</p></td>
+<td><p>md</p></td>
+<td><p>Future: distillation, multimodal, agents, on-device, domain adaptation</p></td>
+</tr>
+<tr class="row-even"><td><p>22</p></td>
+<td><p>md</p></td>
+<td><p>Exercises + references (all Ch11-15 papers)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Code requirements:</strong></p>
+<ul class="simple">
+<li><p>All components from Ch11 must be self-contained (copy, not import)</p></li>
+<li><p>Training config: <code class="docutils literal notranslate"><span class="pre">n_embd=64,</span> <span class="pre">n_head=4,</span> <span class="pre">n_layer=4,</span> <span class="pre">block_size=64,</span> <span class="pre">batch_size=32,</span> <span class="pre">lr=3e-4,</span> <span class="pre">steps=500</span></code></p></li>
+<li><p>Data: <code class="docutils literal notranslate"><span class="pre">wget</span></code> tiny-shakespeare, character-level encoding (65 chars)</p></li>
+<li><p>Loss plot: matplotlib line chart with legend, title, axis labels</p></li>
+<li><p>MoE: <code class="docutils literal notranslate"><span class="pre">num_experts=4,</span> <span class="pre">top_k=2</span></code></p></li>
+<li><p>[ ] <strong>Step 2: Verify notebook is valid JSON + cell count ≥ 22</strong></p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="task-7-update-toc-yml">
+<h3>Task 7: Update _toc.yml<a class="headerlink" href="#task-7-update-toc-yml" title="Link to this heading">#</a></h3>
+<p><strong>Files:</strong></p>
+<ul class="simple">
+<li><p>Modify: <code class="docutils literal notranslate"><span class="pre">_toc.yml</span></code></p></li>
+<li><p>[ ] <strong>Step 1: Add Part IV section</strong></p></li>
+</ul>
+<p>Append after the existing Part III chapters:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">caption</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Part IV - 进阶：走向 SOTA</span>
+<span class="w">    </span><span class="nt">chapters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch11_modern_architecture</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第11章：现代</span><span class="nv"> </span><span class="s">Transformer</span><span class="nv"> </span><span class="s">架构改进&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch12_moe_architecture</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第12章：MoE</span><span class="nv"> </span><span class="s">混合专家架构&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch13_pretraining_engineering</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第13章：大规模预训练工程&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch14_reasoning_grpo</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第14章：推理模型与</span><span class="nv"> </span><span class="s">GRPO&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch15_long_context_inference</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第15章：长上下文与高效推理&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebooks/ch16_modern_gpt_build</span>
+<span class="w">        </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;第16章：综合实战</span><span class="nv"> </span><span class="s">—</span><span class="nv"> </span><span class="s">从</span><span class="nv"> </span><span class="s">GPT-2</span><span class="nv"> </span><span class="s">到现代架构&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Verify _toc.yml is valid YAML</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">yaml;</span> <span class="pre">yaml.safe_load(open('_toc.yml'));</span> <span class="pre">print('YAML</span> <span class="pre">OK')&quot;</span></code>
+Expected: <code class="docutils literal notranslate"><span class="pre">YAML</span> <span class="pre">OK</span></code></p>
+</section>
+<hr class="docutils" />
+<section id="task-8-build-verification">
+<h3>Task 8: Build Verification<a class="headerlink" href="#task-8-build-verification" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Install jupyter-book and build</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;jupyter-book&gt;=1.0.0,&lt;2.0.0&quot;</span> <span class="pre">&amp;&amp;</span> <span class="pre">jupyter-book</span> <span class="pre">build</span> <span class="pre">.</span></code>
+Expected: Build succeeds, <code class="docutils literal notranslate"><span class="pre">_build/html/</span></code> contains 16+ HTML files</p>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Verify all 16 chapters are in the build output</strong></p></li>
+</ul>
+<p>Run: <code class="docutils literal notranslate"><span class="pre">find</span> <span class="pre">_build/html</span> <span class="pre">-name</span> <span class="pre">&quot;notebooks/*.html&quot;</span> <span class="pre">|</span> <span class="pre">sort</span></code>
+Expected: ch01 through ch16 HTML files</p>
+</section>
+<hr class="docutils" />
+<section id="task-9-commit-and-push">
+<h3>Task 9: Commit and Push<a class="headerlink" href="#task-9-commit-and-push" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>[ ] <strong>Step 1: Stage all new files</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>notebooks/ch11_modern_architecture.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>notebooks/ch12_moe_architecture.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>notebooks/ch13_pretraining_engineering.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>notebooks/ch14_reasoning_grpo.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>notebooks/ch15_long_context_inference.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>notebooks/ch16_modern_gpt_build.ipynb<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>_toc.yml
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 2: Commit</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add Part IV advanced chapters (Ch11-16) — modern architecture, MoE, GRPO, long context&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>[ ] <strong>Step 3: Push to GitHub (trigger Pages rebuild)</strong></p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>-c<span class="w"> </span>http.proxy<span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w"> </span>-c<span class="w"> </span>https.proxy<span class="o">=</span><span class="s2">&quot;&quot;</span><span class="w"> </span>push
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="quality-checklist-review-agent-output-against-this">
+<h2>Quality Checklist (Review Agent Output Against This)<a class="headerlink" href="#quality-checklist-review-agent-output-against-this" title="Link to this heading">#</a></h2>
+<p>After subagents complete, verify each notebook against these criteria:</p>
+<ol class="arabic simple">
+<li><p><strong>Paper references:</strong> Every technical claim has an explicit arxiv URL (no hallucinated references)</p></li>
+<li><p><strong>Code runs on CPU:</strong> Ch11-13, Ch15 demos must work without GPU; Ch14/Ch16 GRPO sections need T4 but have fallback</p></li>
+<li><p><strong>Cell structure:</strong> First cell = markdown title+objectives, second cell = code environment setup, last cell = markdown references</p></li>
+<li><p><strong>Language:</strong> Chinese markdown, English technical terms, Chinese code comments</p></li>
+<li><p><strong>No placeholders:</strong> No “TODO”, “TBD”, “implement later” in any cell</p></li>
+<li><p><strong>Self-contained:</strong> Each notebook can be run independently (copy code, don’t import from other notebooks)</p></li>
+<li><p><strong>Baby configs:</strong> All models use small configs that fit in CPU memory</p></li>
+<li><p><strong>Content accuracy:</strong> RMSNorm formula, SwiGLU pattern, RoPE rotation, GQA KV repetition are all correct</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./docs/superpowers/plans"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-structure">File Structure</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notebook-template">Notebook Template</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-1-ch11-modern-transformer-architecture-improvements">Task 1: Ch11 — Modern Transformer Architecture Improvements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-2-ch12-moe-architecture">Task 2: Ch12 — MoE Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-3-ch13-large-scale-pretraining-engineering">Task 3: Ch13 — Large-Scale Pretraining Engineering</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-4-ch14-reasoning-models-and-grpo">Task 4: Ch14 — Reasoning Models and GRPO</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-5-ch15-long-context-and-efficient-inference">Task 5: Ch15 — Long Context and Efficient Inference</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-6-ch16-integration-from-gpt-2-to-modern-architecture">Task 6: Ch16 — Integration: From GPT-2 to Modern Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-7-update-toc-yml">Task 7: Update _toc.yml</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-8-build-verification">Task 8: Build Verification</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#task-9-commit-and-push">Task 9: Commit and Push</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-checklist-review-agent-output-against-this">Quality Checklist (Review Agent Output Against This)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

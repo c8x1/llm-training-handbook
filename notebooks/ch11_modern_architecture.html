@@ -1,0 +1,1750 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>第11章：现代 Transformer 架构改进 &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/ch11_modern_architecture';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="第12章：MoE 混合专家架构" href="ch12_moe_architecture.html" />
+    <link rel="prev" title="第10章：全流程实战" href="ch10_full_pipeline.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch13_pretraining_engineering.html">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch14_reasoning_grpo.html">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch15_long_context_inference.html">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/c8x1/llm-training-handbook/blob/main/notebooks/ch11_modern_architecture.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/notebooks/ch11_modern_architecture.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fnotebooks/ch11_modern_architecture.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/notebooks/ch11_modern_architecture.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>第11章：现代 Transformer 架构改进</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">改进路线图</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rmsnorm-vs-layernorm">11.1 RMSNorm vs LayerNorm</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swiglu-vs-gelu">11.2 SwiGLU vs GELU</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rope">11.3 RoPE（旋转位置编码）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gqa">11.4 GQA（分组查询注意力）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#moderngpt">11.5 集成：组装 ModernGPT</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">集成分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">论文参考</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">练习</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="transformer">
+<h1>第11章：现代 Transformer 架构改进<a class="headerlink" href="#transformer" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>本章目标<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>将 GPT-2 架构升级到 2024-2025 年主流设计</p></li>
+<li><p>理解并实现四大核心改进：<strong>RMSNorm</strong>、<strong>SwiGLU</strong>、<strong>RoPE</strong>、<strong>GQA</strong></p></li>
+<li><p>在 CPU 上用 baby 模型验证每个改进的效果</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>前置知识<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>第1章：GPT 架构（CausalSelfAttention、MLP、Block、GPT）</p></li>
+<li><p>PyTorch <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> 基本用法</p></li>
+<li><p>矩阵运算和 softmax</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>改进路线图<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>组件</p></th>
+<th class="head"><p>GPT-2 (2019)</p></th>
+<th class="head"><p>现代 (Llama/Mistral/…)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>归一化</p></td>
+<td><p>LayerNorm</p></td>
+<td><p><strong>RMSNorm</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>激活函数</p></td>
+<td><p>GELU</p></td>
+<td><p><strong>SwiGLU</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>位置编码</p></td>
+<td><p>可学习绝对位置编码</p></td>
+<td><p><strong>RoPE</strong>（旋转位置编码）</p></td>
+</tr>
+<tr class="row-odd"><td><p>注意力机制</p></td>
+<td><p>MHA（多头注意力）</p></td>
+<td><p><strong>GQA</strong>（分组查询注意力）</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">IN_COLAB</span> <span class="o">=</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span>
+<span class="k">if</span> <span class="n">IN_COLAB</span><span class="p">:</span>
+    <span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="n">matplotlib</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;本地环境运行，请确保已安装 torch&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PyTorch version: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Device: </span><span class="si">{</span><span class="s1">&#39;CUDA&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;CPU&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="rmsnorm-vs-layernorm">
+<h2>11.1 RMSNorm vs LayerNorm<a class="headerlink" href="#rmsnorm-vs-layernorm" title="Link to this heading">#</a></h2>
+<section id="id4">
+<h3>理论<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<p>LayerNorm 的公式：</p>
+<div class="math notranslate nohighlight">
+\[\text{LayerNorm}(x) = \frac{x - \mu}{\sigma} \cdot \gamma + \beta\]</div>
+<p>其中 <span class="math notranslate nohighlight">\(\mu\)</span> 是均值，<span class="math notranslate nohighlight">\(\sigma\)</span> 是标准差，<span class="math notranslate nohighlight">\(\gamma\)</span> 和 <span class="math notranslate nohighlight">\(\beta\)</span> 是可学习参数。</p>
+<p>RMSNorm 的公式：</p>
+<div class="math notranslate nohighlight">
+\[\text{RMSNorm}(x) = \frac{x}{\text{RMS}(x)} \cdot g, \quad \text{RMS}(x) = \sqrt{\frac{1}{d}\sum_{i=1}^{d} x_i^2 + \epsilon}\]</div>
+<p><strong>核心区别</strong>：RMSNorm 去掉了均值中心化（不减均值）和偏置项 <span class="math notranslate nohighlight">\(\beta\)</span>，只保留缩放因子 <span class="math notranslate nohighlight">\(g\)</span>。</p>
+<p><strong>为什么有效</strong>：</p>
+<ol class="arabic simple">
+<li><p><strong>计算更快</strong>：不需要计算均值，减少了约 7-64% 的计算时间（Zhang &amp; Sennrich, 2019）</p></li>
+<li><p><strong>效果相当</strong>：实验表明在大多数任务上与 LayerNorm 性能相当</p></li>
+<li><p><strong>参数更少</strong>：只有 <span class="math notranslate nohighlight">\(g\)</span>（无 <span class="math notranslate nohighlight">\(\beta\)</span>），每个隐藏维度省一个参数</p></li>
+</ol>
+<p>Llama、Mistral、DeepSeek 等现代模型全部使用 RMSNorm。</p>
+<p>参考论文：<a class="reference external" href="https://arxiv.org/abs/1910.07467">Root Mean Square Layer Normalization</a> (Zhang &amp; Sennrich, 2019)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 手写 RMSNorm（~10 行核心逻辑）</span>
+<span class="c1"># ============================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RMSNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Root Mean Square Layer Normalization</span>
+<span class="sd">    </span>
+<span class="sd">    与 LayerNorm 的区别：</span>
+<span class="sd">    - 不做均值中心化（不减均值）</span>
+<span class="sd">    - 没有偏置参数 beta</span>
+<span class="sd">    - 只保留缩放参数 weight (g)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>  <span class="c1"># 可学习缩放因子 g</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_norm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># RMS(x) = sqrt(mean(x^2) + eps)</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">torch</span><span class="o">.</span><span class="n">rsqrt</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_norm</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">float</span><span class="p">())</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 对比 LayerNorm vs RMSNorm：参数量、计算、输出差异</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">dim</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>  <span class="c1"># (batch, seq_len, dim)</span>
+
+<span class="c1"># 实例化两种归一化</span>
+<span class="n">ln</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+<span class="n">rn</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+
+<span class="c1"># 参数量对比</span>
+<span class="n">ln_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">ln</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>  <span class="c1"># weight + bias</span>
+<span class="n">rn_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">rn</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>  <span class="c1"># weight only</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;LayerNorm 参数量: </span><span class="si">{</span><span class="n">ln_params</span><span class="si">}</span><span class="s2"> (weight=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">, bias=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RMSNorm  参数量: </span><span class="si">{</span><span class="n">rn_params</span><span class="si">}</span><span class="s2"> (weight=</span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;参数节省: </span><span class="si">{</span><span class="n">dim</span><span class="si">}</span><span class="s2"> 个/层 (</span><span class="si">{</span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">dim</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">ln_params</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% 减少)&quot;</span><span class="p">)</span>
+
+<span class="c1"># 输出对比</span>
+<span class="n">y_ln</span> <span class="o">=</span> <span class="n">ln</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y_rn</span> <span class="o">=</span> <span class="n">rn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LayerNorm 输出均值: </span><span class="si">{</span><span class="n">y_ln</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RMSNorm  输出均值: </span><span class="si">{</span><span class="n">y_rn</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LayerNorm 输出标准差: </span><span class="si">{</span><span class="n">y_ln</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RMSNorm  输出标准差: </span><span class="si">{</span><span class="n">y_rn</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 速度对比</span>
+<span class="n">n_iters</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iters</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">ln</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">ln_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_iters</span><span class="p">):</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">rn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">rn_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">LayerNorm 耗时: </span><span class="si">{</span><span class="n">ln_time</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> ms (</span><span class="si">{</span><span class="n">n_iters</span><span class="si">}</span><span class="s2"> 次)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RMSNorm  耗时: </span><span class="si">{</span><span class="n">rn_time</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> ms (</span><span class="si">{</span><span class="n">n_iters</span><span class="si">}</span><span class="s2"> 次)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;速度比: LayerNorm/RMSNorm = </span><span class="si">{</span><span class="n">ln_time</span><span class="o">/</span><span class="n">rn_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id5">
+<h3>分析<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>LayerNorm 会强制输出均值为 0、方差为 1（因为有均值中心化和标准差归一化）</p></li>
+<li><p>RMSNorm 只做尺度归一化（除以 RMS），不改变均值，但同样稳定了数值范围</p></li>
+<li><p>参数量上 RMSNorm 少了一半（只有 weight，没有 bias）</p></li>
+<li><p>对于大模型（如 Llama-70B 有 80 层），每层有 2 个归一化层，省下的参数和计算量相当可观</p></li>
+<li><p>实际工程中，RMSNorm 配合 float16/bfloat16 训练也更稳定（在 <code class="docutils literal notranslate"><span class="pre">.float()</span></code> 精度下计算再转回）</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="swiglu-vs-gelu">
+<h2>11.2 SwiGLU vs GELU<a class="headerlink" href="#swiglu-vs-gelu" title="Link to this heading">#</a></h2>
+<section id="id6">
+<h3>理论<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<p>GPT-2 的 FFN 结构：
+$<span class="math notranslate nohighlight">\(\text{FFN}(x) = W_2 \cdot \text{GELU}(W_1 \cdot x)\)</span>$</p>
+<p>现代模型使用 <strong>SwiGLU</strong>（Swish-Gated Linear Unit）：
+$<span class="math notranslate nohighlight">\(\text{SwiGLU}(x) = (\text{Swish}(x W_{gate}) \odot (x W_{up})) W_{down}\)</span>$</p>
+<p>其中 Swish（也叫 SiLU）定义为：
+$<span class="math notranslate nohighlight">\(\text{Swish}(x) = x \cdot \sigma(\beta x) = x \cdot \text{sigmoid}(x)\)</span>$</p>
+<p><strong>GLU 家族</strong>：GLU (Gated Linear Unit) 的核心思想是用一个「门控」分支来筛选信息。</p>
+<ul class="simple">
+<li><p>门控信号决定哪些信息通过、哪些被抑制</p></li>
+<li><p>SwiGLU 用 Swish 激活作为门控，比 ReLU/GLU 效果更好</p></li>
+</ul>
+<p><strong>三矩阵结构</strong>：</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(W_{gate}\)</span>：门控投影（gate），决定信息通过的程度</p></li>
+<li><p><span class="math notranslate nohighlight">\(W_{up}\)</span>：上投影（up），将维度从 <span class="math notranslate nohighlight">\(d\)</span> 扩展到 <span class="math notranslate nohighlight">\(4d\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(W_{down}\)</span>：下投影（down），将维度从 <span class="math notranslate nohighlight">\(4d\)</span> 压回 <span class="math notranslate nohighlight">\(d\)</span></p></li>
+</ul>
+<p>参考论文：<a class="reference external" href="https://arxiv.org/abs/2002.05202">GLU Variants Improve Transformer</a> (Shazeer, 2020)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 手写 SwiGLU FFN（替代 GPT-2 的 GELU MLP）</span>
+<span class="c1"># ============================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SwiGLUFFN</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SwiGLU 前馈网络，替代 GPT-2 的 GELU MLP</span>
+<span class="sd">    </span>
+<span class="sd">    结构：x -&gt; W_gate -&gt; SiLU -&gt; * (逐元素乘) -&gt; W_down -&gt; output</span>
+<span class="sd">                    x -&gt; W_up   -^</span>
+<span class="sd">    </span>
+<span class="sd">    三个矩阵：W_gate（门控）、W_up（上投影）、W_down（下投影）</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">hidden_dim</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Llama 风格：2/3 * 4 * n_embd，对齐到 256 的倍数</span>
+            <span class="n">hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">)</span>
+            <span class="n">hidden_dim</span> <span class="o">=</span> <span class="p">((</span><span class="n">hidden_dim</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span> <span class="o">*</span> <span class="mi">256</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_gate</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_up</span>   <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_down</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># SwiGLU = SiLU(gate) * up</span>
+        <span class="n">gate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_gate</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                    <span class="c1"># (B, T, hidden_dim)</span>
+        <span class="n">up</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_up</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>                      <span class="c1"># (B, T, hidden_dim)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="n">gate</span><span class="p">)</span> <span class="o">*</span> <span class="n">up</span>                    <span class="c1"># Swish(gate) * up &lt;-- 门控机制</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_down</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>                       <span class="c1"># (B, T, n_embd)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GELU_MLP</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;GPT-2 原始 MLP，用于对比</span>
+<span class="sd">    </span>
+<span class="sd">    结构：c_fc (n_embd -&gt; 4*n_embd) -&gt; GELU -&gt; c_proj (4*n_embd -&gt; n_embd)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gelu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GELU</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_proj</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_fc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_proj</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 对比 SwiGLU FFN vs GELU MLP：参数量、激活函数可视化</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">n_embd</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+
+<span class="n">gelu_mlp</span> <span class="o">=</span> <span class="n">GELU_MLP</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+<span class="n">swiglu_ffn</span> <span class="o">=</span> <span class="n">SwiGLUFFN</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+
+<span class="c1"># 参数量对比</span>
+<span class="n">gelu_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">gelu_mlp</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="n">swiglu_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">swiglu_ffn</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GELU MLP (2 个矩阵):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  c_fc:   </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="mi">4</span><span class="o">*</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">n_embd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  c_proj: </span><span class="si">{</span><span class="mi">4</span><span class="o">*</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="mi">4</span><span class="o">*</span><span class="n">n_embd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  合计: </span><span class="si">{</span><span class="n">gelu_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+
+<span class="c1"># Llama 风格 hidden_dim</span>
+<span class="n">hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">hidden_dim</span> <span class="o">=</span> <span class="p">((</span><span class="n">hidden_dim</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span> <span class="o">*</span> <span class="mi">256</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">SwiGLU FFN (3 个矩阵，hidden_dim=</span><span class="si">{</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2">):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  w_gate: </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">n_embd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">hidden_dim</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  w_up:   </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">n_embd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">hidden_dim</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  w_down: </span><span class="si">{</span><span class="n">hidden_dim</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">hidden_dim</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  合计: </span><span class="si">{</span><span class="n">swiglu_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">SwiGLU 参数量是 GELU MLP 的 </span><span class="si">{</span><span class="n">swiglu_params</span><span class="o">/</span><span class="n">gelu_params</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x&quot;</span><span class="p">)</span>
+
+<span class="c1"># 功能验证</span>
+<span class="n">y_gelu</span> <span class="o">=</span> <span class="n">gelu_mlp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">y_swiglu</span> <span class="o">=</span> <span class="n">swiglu_ffn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">GELU MLP  输出 shape: </span><span class="si">{</span><span class="n">y_gelu</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SwiGLU FFN 输出 shape: </span><span class="si">{</span><span class="n">y_swiglu</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 可视化激活函数对比</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># GELU</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;GELU&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="c1"># Swish / SiLU</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">F</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">())</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Swish / SiLU&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="c1"># 对比</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">F</span><span class="o">.</span><span class="n">gelu</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;GELU&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">F</span><span class="o">.</span><span class="n">silu</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Swish&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;GELU vs Swish&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;activation_comparison.png&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">激活函数对比图已保存到 activation_comparison.png&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id7">
+<h3>分析<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>GELU 和 Swish 的曲线非常相似，都在负值区域有轻微的非零输出，在正值区域近似线性</p></li>
+<li><p>SwiGLU 的关键不是激活函数本身，而是<strong>门控机制</strong>：<code class="docutils literal notranslate"><span class="pre">silu(gate)</span> <span class="pre">*</span> <span class="pre">up</span></code> 让网络可以自适应地选择传递哪些信息</p></li>
+<li><p>参数量代价：SwiGLU 需要 3 个矩阵而非 2 个，但 Llama 通过缩小 hidden_dim（<span class="math notranslate nohighlight">\(\frac{8}{3}d\)</span> 对齐到 256 的倍数）来平衡参数量</p></li>
+<li><p>Shazeer (2020) 的实验表明，SwiGLU 在多个基准上优于其他 GLU 变体（ReGLU、GeGLU 等）</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="rope">
+<h2>11.3 RoPE（旋转位置编码）<a class="headerlink" href="#rope" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h3>理论<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<p>GPT-2 使用<strong>可学习的绝对位置编码</strong>：为每个位置 <span class="math notranslate nohighlight">\(0, 1, ..., T-1\)</span> 学习一个向量。</p>
+<p>RoPE（Rotary Position Embedding）的核心思想：<strong>将位置信息编码为旋转操作</strong>。</p>
+<p><strong>直觉理解</strong>：</p>
+<ul class="simple">
+<li><p>把 Q 和 K 的每对相邻维度看作二维平面上的点 <span class="math notranslate nohighlight">\((x_{2i}, x_{2i+1})\)</span></p></li>
+<li><p>根据位置 <span class="math notranslate nohighlight">\(m\)</span> 对这个点做旋转：角度为 <span class="math notranslate nohighlight">\(m \cdot \theta_i\)</span></p></li>
+<li><p>不同维度用不同的旋转频率 <span class="math notranslate nohighlight">\(\theta_i = 10000^{-2i/d}\)</span></p></li>
+</ul>
+<p><strong>数学原理</strong>：</p>
+<p>对于位置 <span class="math notranslate nohighlight">\(m\)</span> 的向量 <span class="math notranslate nohighlight">\(x\)</span>，RoPE 将其变换为：</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{pmatrix} x_{2i} \\ x_{2i+1} \end{pmatrix} \rightarrow \begin{pmatrix} \cos(m\theta_i) &amp; -\sin(m\theta_i) \\ \sin(m\theta_i) &amp; \cos(m\theta_i) \end{pmatrix} \begin{pmatrix} x_{2i} \\ x_{2i+1} \end{pmatrix}\end{split}\]</div>
+<p><strong>关键性质</strong>：
+$<span class="math notranslate nohighlight">\(q_m^T k_n = \sum_i R_{m\theta_i} q_i \cdot R_{n\theta_i} k_i = \sum_i R_{(m-n)\theta_i} (q_i \cdot k_i)\)</span>$</p>
+<p>内积只依赖于<strong>相对位置</strong> <span class="math notranslate nohighlight">\(m - n\)</span>！这就是 RoPE 能捕获相对位置信息的数学原因。</p>
+<p><strong>优势</strong>：</p>
+<ol class="arabic simple">
+<li><p>自然编码相对位置关系</p></li>
+<li><p>可外推到更长序列（通过 NTK-aware scaling 等技术）</p></li>
+<li><p>不需要额外的位置 embedding 参数表</p></li>
+</ol>
+<p>参考论文：<a class="reference external" href="https://arxiv.org/abs/2104.09864">RoFormer</a> (Su et al., 2021)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 手写 RoPE（~30 行）</span>
+<span class="c1"># ============================================================</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">precompute_freqs_cis</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">max_seq_len</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;预计算 RoPE 的旋转频率（复数形式）</span>
+<span class="sd">    </span>
+<span class="sd">    对于 dim 维的向量（必须是偶数），计算每对维度的旋转角度。</span>
+<span class="sd">    freqs[i] = 1 / (theta ^ (2i / dim))，对应第 i 对维度的基础频率。</span>
+<span class="sd">    </span>
+<span class="sd">    参数:</span>
+<span class="sd">        dim: head_dim（每个注意力头的维度）</span>
+<span class="sd">        max_seq_len: 最大序列长度</span>
+<span class="sd">        theta: 基础频率（默认 10000，Llama-3 用 500000）</span>
+<span class="sd">    </span>
+<span class="sd">    返回: (max_seq_len, dim/2) 的复数张量</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">theta</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">dim</span><span class="p">))</span>  <span class="c1"># (dim/2,)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">max_seq_len</span><span class="p">)</span>  <span class="c1"># (max_seq_len,)</span>
+    <span class="c1"># 外积: 每个位置 m 对每个频率 i 的角度 m * freqs[i]</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>  <span class="c1"># (max_seq_len, dim/2)</span>
+    <span class="n">freqs_cis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">polar</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">freqs</span><span class="p">),</span> <span class="n">freqs</span><span class="p">)</span>  <span class="c1"># 复数形式 e^(i*angle)</span>
+    <span class="k">return</span> <span class="n">freqs_cis</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_rotary_emb</span><span class="p">(</span><span class="n">xq</span><span class="p">,</span> <span class="n">xk</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;对 Q 和 K 应用 RoPE</span>
+<span class="sd">    </span>
+<span class="sd">    参数:</span>
+<span class="sd">        xq, xk: (batch, seq_len, n_head, head_dim)</span>
+<span class="sd">        freqs_cis: (seq_len, head_dim/2)</span>
+<span class="sd">    </span>
+<span class="sd">    步骤：</span>
+<span class="sd">    1. 将相邻维度配对，视为复数</span>
+<span class="sd">    2. 与预计算的旋转因子相乘（复数乘法 = 旋转）</span>
+<span class="sd">    3. 将复数变回实数</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># 将实数向量 reshape 成复数形式</span>
+    <span class="c1"># (B, T, n_head, head_dim) -&gt; (B, T, n_head, head_dim/2, 2) -&gt; 复数</span>
+    <span class="n">xq_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="n">xq</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">xq</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">xk_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_complex</span><span class="p">(</span><span class="n">xk</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">xk</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    
+    <span class="c1"># 广播并做复数乘法（旋转）</span>
+    <span class="c1"># freqs_cis: (T, head_dim/2) -&gt; (1, T, 1, head_dim/2)</span>
+    <span class="n">freqs_cis</span> <span class="o">=</span> <span class="n">freqs_cis</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:</span><span class="n">xq_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">xq_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_real</span><span class="p">(</span><span class="n">xq_</span> <span class="o">*</span> <span class="n">freqs_cis</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># 复数 -&gt; 实数</span>
+    <span class="n">xk_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">view_as_real</span><span class="p">(</span><span class="n">xk_</span> <span class="o">*</span> <span class="n">freqs_cis</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">xq_out</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">xq</span><span class="p">),</span> <span class="n">xk_out</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">xk</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 验证 RoPE 的相对位置性质 + 与绝对位置编码对比</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">n_embd</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">n_head</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">head_dim</span> <span class="o">=</span> <span class="n">n_embd</span> <span class="o">//</span> <span class="n">n_head</span>  <span class="c1"># 32</span>
+<span class="n">seq_len</span> <span class="o">=</span> <span class="mi">16</span>
+
+<span class="c1"># 生成 Q, K</span>
+<span class="n">q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+<span class="n">k</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">)</span>
+
+<span class="c1"># 预计算旋转频率</span>
+<span class="n">freqs_cis</span> <span class="o">=</span> <span class="n">precompute_freqs_cis</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;freqs_cis shape: </span><span class="si">{</span><span class="n">freqs_cis</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># (seq_len, head_dim/2)</span>
+
+<span class="c1"># 应用 RoPE</span>
+<span class="n">q_rot</span><span class="p">,</span> <span class="n">k_rot</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;旋转后 Q shape: </span><span class="si">{</span><span class="n">q_rot</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># (1, seq_len, n_head, head_dim)</span>
+
+<span class="c1"># 对比绝对位置编码</span>
+<span class="n">abs_pe</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">seq_len</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>  <span class="c1"># 可学习位置编码</span>
+<span class="n">q_flat</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">k_flat</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">q_abs</span> <span class="o">=</span> <span class="n">q_flat</span> <span class="o">+</span> <span class="n">abs_pe</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+<span class="n">k_abs</span> <span class="o">=</span> <span class="n">k_flat</span> <span class="o">+</span> <span class="n">abs_pe</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+<span class="c1"># 计算 attention score</span>
+<span class="c1"># RoPE</span>
+<span class="n">q_r</span> <span class="o">=</span> <span class="n">q_rot</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># (1, n_head, T, head_dim)</span>
+<span class="n">k_r</span> <span class="o">=</span> <span class="n">k_rot</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">attn_rope</span> <span class="o">=</span> <span class="p">(</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">)</span>
+
+<span class="c1"># 绝对 PE</span>
+<span class="n">attn_abs</span> <span class="o">=</span> <span class="p">(</span><span class="n">q_abs</span> <span class="o">@</span> <span class="n">k_abs</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">RoPE attention score 矩阵 (head 0, 前 6x6):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">attn_rope</span><span class="p">[:</span><span class="mi">6</span><span class="p">,</span> <span class="p">:</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="c1"># 检查对角线元素是否相等（相对位置为 0）</span>
+<span class="n">diag</span> <span class="o">=</span> <span class="n">attn_rope</span><span class="o">.</span><span class="n">diagonal</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">对角线元素 (相对位置=0): </span><span class="si">{</span><span class="n">diag</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;对角线方差: </span><span class="si">{</span><span class="n">diag</span><span class="o">.</span><span class="n">var</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> (应接近 0，因为相对位置相同)&quot;</span><span class="p">)</span>
+
+<span class="c1"># 可视化 RoPE vs 无位置编码</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;Agg&#39;</span><span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># 无位置编码</span>
+<span class="n">q_no_pe</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">k_no_pe</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">attn_no</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_no_pe</span> <span class="o">@</span> <span class="n">k_no_pe</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">attn_no</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;无位置编码&#39;</span><span class="p">)</span>
+
+<span class="c1"># RoPE</span>
+<span class="n">attn_rp</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn_rope</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">attn_rp</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;RoPE&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s1">&#39;注意力分布对比: RoPE 引入位置感知&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;rope_comparison.png&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">RoPE 对比图已保存到 rope_comparison.png&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id9">
+<h3>分析<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>RoPE 通过复数旋转巧妙地将位置信息融入 Q 和 K</p></li>
+<li><p>内积 <span class="math notranslate nohighlight">\(q_m^T k_n\)</span> 自然地编码了相对位置 <span class="math notranslate nohighlight">\(m-n\)</span>，无需显式计算</p></li>
+<li><p>与绝对位置编码不同，RoPE 不需要额外的 embedding 参数表</p></li>
+<li><p>对角线元素（相对位置为 0）几乎完全一致，验证了 RoPE 的等变性</p></li>
+<li><p>RoPE 的另一个优势是<strong>长度外推</strong>：通过修改 <span class="math notranslate nohighlight">\(\theta\)</span>（如 NTK-aware scaling），可以将训练在短序列上的模型应用到长序列</p></li>
+<li><p>Llama-3 将 <span class="math notranslate nohighlight">\(\theta\)</span> 从 10000 提高到 500000，以支持 8K+ 的上下文长度</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="gqa">
+<h2>11.4 GQA（分组查询注意力）<a class="headerlink" href="#gqa" title="Link to this heading">#</a></h2>
+<section id="id10">
+<h3>理论<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<p>注意力机制的演进：</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>类型</p></th>
+<th class="head"><p>Q heads</p></th>
+<th class="head"><p>K/V heads</p></th>
+<th class="head"><p>KV cache</p></th>
+<th class="head"><p>质量</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>MHA (GPT-2)</p></td>
+<td><p>n_head</p></td>
+<td><p>n_head</p></td>
+<td><p>大</p></td>
+<td><p>最高</p></td>
+</tr>
+<tr class="row-odd"><td><p>GQA (Llama-2)</p></td>
+<td><p>n_head</p></td>
+<td><p>n_kv_heads</p></td>
+<td><p>中</p></td>
+<td><p>高</p></td>
+</tr>
+<tr class="row-even"><td><p>MQA (PaLM)</p></td>
+<td><p>n_head</p></td>
+<td><p>1</p></td>
+<td><p>最小</p></td>
+<td><p>较低</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>MHA</strong>：每个 Q head 有独立的 K 和 V head
+<strong>MQA</strong>：所有 Q head 共享 1 组 K 和 V
+<strong>GQA</strong>：将 Q heads 分成 <code class="docutils literal notranslate"><span class="pre">n_head</span> <span class="pre">/</span> <span class="pre">n_kv_heads</span></code> 组，每组共享一组 K/V</p>
+<p><strong>KV cache 节省计算</strong>：</p>
+<ul class="simple">
+<li><p>生成时需要缓存每层的 K 和 V</p></li>
+<li><p>KV cache 大小 = <span class="math notranslate nohighlight">\(2 \times n\_layer \times n\_kv\_heads \times head\_dim \times seq\_len \times \text{bytes}\)</span></p></li>
+<li><p>减少 K/V heads 直接减少显存占用</p></li>
+</ul>
+<p>参考论文：<a class="reference external" href="https://arxiv.org/abs/2305.13245">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a> (Ainslie et al., 2023)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 手写 GQA (Grouped Query Attention)</span>
+<span class="c1"># ============================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GroupedQueryAttention</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;分组查询注意力</span>
+<span class="sd">    </span>
+<span class="sd">    n_heads: Q 的头数</span>
+<span class="sd">    n_kv_heads: K/V 的头数（&lt;= n_heads）</span>
+<span class="sd">    </span>
+<span class="sd">    当 n_kv_heads == n_heads 时，等价于 MHA</span>
+<span class="sd">    当 n_kv_heads == 1 时，等价于 MQA</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_heads</span><span class="p">,</span> <span class="n">n_kv_heads</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">n_embd</span> <span class="o">%</span> <span class="n">n_heads</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="n">n_heads</span> <span class="o">%</span> <span class="n">n_kv_heads</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># Q heads 必须能被 KV heads 整除</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_heads</span> <span class="o">=</span> <span class="n">n_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_kv_heads</span> <span class="o">=</span> <span class="n">n_kv_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span> <span class="o">=</span> <span class="n">n_embd</span> <span class="o">//</span> <span class="n">n_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_rep</span> <span class="o">=</span> <span class="n">n_heads</span> <span class="o">//</span> <span class="n">n_kv_heads</span>  <span class="c1"># 每个 KV head 对应几个 Q head</span>
+        
+        <span class="c1"># Q: n_heads 个头, K/V: n_kv_heads 个头</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wq</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wk</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_kv_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wv</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_kv_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wo</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_heads</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn_dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resid_dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        
+        <span class="c1"># causal mask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">))</span>
+                                     <span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_repeat_kv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;将 KV heads 重复以匹配 Q heads 的数量</span>
+<span class="sd">        </span>
+<span class="sd">        x: (B, n_kv_heads, T, head_dim) -&gt; (B, n_heads, T, head_dim)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rep</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">x</span>  <span class="c1"># MHA，不需要重复</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">n_kv</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">n_kv</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rep</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">n_kv</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_rep</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        
+        <span class="n">q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wq</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>      <span class="c1"># (B, T, n_heads, head_dim)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wk</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_kv_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>   <span class="c1"># (B, T, n_kv_heads, head_dim)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wv</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_kv_heads</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">)</span>   <span class="c1"># (B, T, n_kv_heads, head_dim)</span>
+        
+        <span class="c1"># 应用 RoPE（如果提供了旋转频率）</span>
+        <span class="k">if</span> <span class="n">freqs_cis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">q</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">)</span>
+        
+        <span class="c1"># 转置为 (B, heads, T, head_dim) 便于矩阵乘法</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># (B, n_heads, T, head_dim)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># (B, n_kv_heads, T, head_dim)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>   <span class="c1"># (B, n_kv_heads, T, head_dim)</span>
+        
+        <span class="c1"># 重复 KV heads 以匹配 Q heads</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeat_kv</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>  <span class="c1"># (B, n_heads, T, head_dim)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeat_kv</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>  <span class="c1"># (B, n_heads, T, head_dim)</span>
+        
+        <span class="c1"># Scaled dot-product attention</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head_dim</span><span class="p">))</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="n">att</span><span class="o">.</span><span class="n">masked_fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">T</span><span class="p">,</span> <span class="p">:</span><span class="n">T</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">))</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">att</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">att</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn_dropout</span><span class="p">(</span><span class="n">att</span><span class="p">)</span>
+        
+        <span class="n">y</span> <span class="o">=</span> <span class="n">att</span> <span class="o">@</span> <span class="n">v</span>  <span class="c1"># (B, n_heads, T, head_dim)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C</span><span class="p">)</span>  <span class="c1"># (B, T, n_embd)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resid_dropout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wo</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">y</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># KV cache 大小对比：MHA vs GQA vs MQA（具体数字）</span>
+<span class="c1"># ============================================================</span>
+
+<span class="c1"># 模拟 Llama-2 70B 级别的配置</span>
+<span class="n">configs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;MHA (GPT-2 风格)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;n_layer&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;n_heads&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;n_kv_heads&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;head_dim&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">},</span>
+    <span class="s2">&quot;GQA-8 (Llama-2 70B)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;n_layer&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;n_heads&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;n_kv_heads&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;head_dim&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">},</span>
+    <span class="s2">&quot;GQA-4&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;n_layer&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;n_heads&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;n_kv_heads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;head_dim&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">},</span>
+    <span class="s2">&quot;MQA (n_kv=1)&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;n_layer&quot;</span><span class="p">:</span> <span class="mi">80</span><span class="p">,</span> <span class="s2">&quot;n_heads&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span> <span class="s2">&quot;n_kv_heads&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;head_dim&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">seq_len</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">bytes_per_element</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># float16</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;序列长度: </span><span class="si">{</span><span class="n">seq_len</span><span class="si">}</span><span class="s2">, 精度: float16, 层数: 80&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39;配置&#39;</span><span class="si">:</span><span class="s2">25s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;KV heads&#39;</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;KV cache (MB)&#39;</span><span class="si">:</span><span class="s2">&gt;15s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;节省比例&#39;</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">65</span><span class="p">)</span>
+
+<span class="n">mha_cache</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">configs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># KV cache = 2 (K+V) * n_layer * n_kv_heads * head_dim * seq_len * bytes</span>
+    <span class="n">cache_bytes</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;n_layer&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;n_kv_heads&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">cfg</span><span class="p">[</span><span class="s2">&quot;head_dim&quot;</span><span class="p">]</span> 
+                   <span class="o">*</span> <span class="n">seq_len</span> <span class="o">*</span> <span class="n">bytes_per_element</span><span class="p">)</span>
+    <span class="n">cache_mb</span> <span class="o">=</span> <span class="n">cache_bytes</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">mha_cache</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mha_cache</span> <span class="o">=</span> <span class="n">cache_mb</span>
+        <span class="n">saving</span> <span class="o">=</span> <span class="s2">&quot;-&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">saving</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">cache_mb</span><span class="o">/</span><span class="n">mha_cache</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">%&quot;</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">25s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">cfg</span><span class="p">[</span><span class="s1">&#39;n_kv_heads&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;10d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">cache_mb</span><span class="si">:</span><span class="s2">&gt;15.0f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">saving</span><span class="si">:</span><span class="s2">&gt;10s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">结论: GQA-8 相比 MHA 节省了 </span><span class="si">{</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">8</span><span class="o">/</span><span class="mi">64</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">% 的 KV cache 显存&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 验证 GQA 正确性：不同 KV head 数的 forward pass</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">n_embd</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">n_head</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">block_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;测试不同 KV head 数的 GQA:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># MHA: n_kv_heads == n_heads</span>
+<span class="n">attn_mha</span> <span class="o">=</span> <span class="n">GroupedQueryAttention</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_kv_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">)</span>
+<span class="n">y_mha</span> <span class="o">=</span> <span class="n">attn_mha</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">params_mha</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">attn_mha</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MHA  (n_kv=4): output=</span><span class="si">{</span><span class="n">y_mha</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, params=</span><span class="si">{</span><span class="n">params_mha</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># GQA-2: n_kv_heads = 2</span>
+<span class="n">attn_gqa2</span> <span class="o">=</span> <span class="n">GroupedQueryAttention</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_kv_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">)</span>
+<span class="n">y_gqa2</span> <span class="o">=</span> <span class="n">attn_gqa2</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">params_gqa2</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">attn_gqa2</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GQA-2 (n_kv=2): output=</span><span class="si">{</span><span class="n">y_gqa2</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, params=</span><span class="si">{</span><span class="n">params_gqa2</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># MQA: n_kv_heads = 1</span>
+<span class="n">attn_mqa</span> <span class="o">=</span> <span class="n">GroupedQueryAttention</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_kv_heads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="n">block_size</span><span class="p">)</span>
+<span class="n">y_mqa</span> <span class="o">=</span> <span class="n">attn_mqa</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">params_mqa</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">attn_mqa</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MQA  (n_kv=1): output=</span><span class="si">{</span><span class="n">y_mqa</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, params=</span><span class="si">{</span><span class="n">params_mqa</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">参数量比例:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  MHA  : GQA-2 : MQA = </span><span class="si">{</span><span class="n">params_mha</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="n">params_gqa2</span><span class="si">}</span><span class="s2"> : </span><span class="si">{</span><span class="n">params_mqa</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  即   : </span><span class="si">{</span><span class="n">params_mha</span><span class="o">/</span><span class="n">params_mha</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x : </span><span class="si">{</span><span class="n">params_gqa2</span><span class="o">/</span><span class="n">params_mha</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x : </span><span class="si">{</span><span class="n">params_mqa</span><span class="o">/</span><span class="n">params_mha</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id11">
+<h3>分析<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>GQA 是 MHA 和 MQA 的折中：保留大部分质量，同时显著减少 KV cache</p></li>
+<li><p>参数减少主要来自 K/V 的投影矩阵（<code class="docutils literal notranslate"><span class="pre">wk</span></code> 和 <code class="docutils literal notranslate"><span class="pre">wv</span></code> 的输出维度从 <code class="docutils literal notranslate"><span class="pre">n_heads</span> <span class="pre">*</span> <span class="pre">head_dim</span></code> 降到 <code class="docutils literal notranslate"><span class="pre">n_kv_heads</span> <span class="pre">*</span> <span class="pre">head_dim</span></code>）</p></li>
+<li><p>Llama-2 70B 使用 GQA-8（64 个 Q heads / 8 个 KV heads），KV cache 节省 87.5%</p></li>
+<li><p>Llama-3 进一步使用了 GQA-8，而 Mistral-7B 使用 GQA-1（即 MQA）</p></li>
+<li><p>Ainslie et al. (2023) 的实验表明 GQA 在质量和推理速度之间取得了最佳平衡</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="moderngpt">
+<h2>11.5 集成：组装 ModernGPT<a class="headerlink" href="#moderngpt" title="Link to this heading">#</a></h2>
+<p>现在我们将四个改进组合到一个完整的模型中：</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>改进</p></th>
+<th class="head"><p>替换对象</p></th>
+<th class="head"><p>效果</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RMSNorm</p></td>
+<td><p>LayerNorm</p></td>
+<td><p>更快、更少参数</p></td>
+</tr>
+<tr class="row-odd"><td><p>SwiGLU</p></td>
+<td><p>GELU MLP</p></td>
+<td><p>更好的 FFN 效果</p></td>
+</tr>
+<tr class="row-even"><td><p>RoPE</p></td>
+<td><p>绝对位置编码</p></td>
+<td><p>相对位置 + 可外推</p></td>
+</tr>
+<tr class="row-odd"><td><p>GQA</p></td>
+<td><p>MHA</p></td>
+<td><p>更小的 KV cache</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># ModernGPT: 集成四大改进的完整 Transformer</span>
+<span class="c1"># ============================================================</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ModernGPTConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;现代 GPT 配置&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+                 <span class="n">n_layer</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">768</span><span class="p">,</span>
+                 <span class="n">n_kv_heads</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>   <span class="c1"># None 表示等于 n_head (MHA)</span>
+                 <span class="n">dropout</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                 <span class="n">rope_theta</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vocab_size</span> <span class="o">=</span> <span class="n">vocab_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">block_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_layer</span> <span class="o">=</span> <span class="n">n_layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_head</span> <span class="o">=</span> <span class="n">n_head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_embd</span> <span class="o">=</span> <span class="n">n_embd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_kv_heads</span> <span class="o">=</span> <span class="n">n_kv_heads</span> <span class="k">if</span> <span class="n">n_kv_heads</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">n_head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rope_theta</span> <span class="o">=</span> <span class="n">rope_theta</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ModernBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;现代 Transformer Block</span>
+<span class="sd">    </span>
+<span class="sd">    集成：RMSNorm + GQA(+RoPE) + SwiGLU</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln_1</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">)</span>                        <span class="c1"># 改进 1: RMSNorm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attn</span> <span class="o">=</span> <span class="n">GroupedQueryAttention</span><span class="p">(</span>                         <span class="c1"># 改进 3+4: RoPE + GQA</span>
+            <span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_head</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_kv_heads</span><span class="p">,</span> 
+            <span class="n">config</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">dropout</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln_2</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">)</span>                        <span class="c1"># 改进 1: RMSNorm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span> <span class="o">=</span> <span class="n">SwiGLUFFN</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>  <span class="c1"># 改进 2: SwiGLU</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln_1</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">freqs_cis</span><span class="p">)</span>  <span class="c1"># Pre-norm + 注意力</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ffn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ln_2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>               <span class="c1"># Pre-norm + FFN</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ModernGPT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;集成四大改进的现代 GPT 模型</span>
+<span class="sd">    </span>
+<span class="sd">    架构对比 GPT-2:</span>
+<span class="sd">    - LayerNorm -&gt; RMSNorm</span>
+<span class="sd">    - GELU MLP -&gt; SwiGLU FFN  </span>
+<span class="sd">    - 可学习绝对位置编码 -&gt; RoPE</span>
+<span class="sd">    - MHA -&gt; GQA</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">block_size</span>
+        
+        <span class="c1"># Token embedding（无位置编码！RoPE 在 attention 内部处理位置）</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_embeddings</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
+        
+        <span class="c1"># Transformer blocks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span>
+            <span class="n">ModernBlock</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_layer</span><span class="p">)</span>
+        <span class="p">])</span>
+        
+        <span class="c1"># 最终归一化</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm</span> <span class="o">=</span> <span class="n">RMSNorm</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">)</span>
+        
+        <span class="c1"># Output head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="c1"># Weight tying</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tok_embeddings</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">weight</span>
+        
+        <span class="c1"># 预计算 RoPE 频率（不需要梯度）</span>
+        <span class="n">head_dim</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">n_embd</span> <span class="o">//</span> <span class="n">config</span><span class="o">.</span><span class="n">n_head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">register_buffer</span><span class="p">(</span>
+            <span class="s2">&quot;freqs_cis&quot;</span><span class="p">,</span>
+            <span class="n">precompute_freqs_cis</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">rope_theta</span><span class="p">)</span>
+        <span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_init_weights</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_init_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">module</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">):</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">init</span><span class="o">.</span><span class="n">normal_</span><span class="p">(</span><span class="n">module</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">T</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;序列长度 </span><span class="si">{</span><span class="n">T</span><span class="si">}</span><span class="s2"> 超过最大长度 </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">block_size</span><span class="si">}</span><span class="s2">&quot;</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tok_embeddings</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>  <span class="c1"># (B, T, n_embd) -- 无位置编码！</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
+        <span class="n">freqs_cis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freqs_cis</span><span class="p">[:</span><span class="n">T</span><span class="p">]</span>  <span class="c1"># 取前 T 个位置的旋转频率</span>
+        
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">freqs_cis</span><span class="p">)</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
+        <span class="n">loss</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">targets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        
+        <span class="k">return</span> <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># GPT-2 风格 vs Modern 风格：完整参数量对比</span>
+<span class="c1"># ============================================================</span>
+
+<span class="c1"># Baby 配置，CPU 可跑</span>
+<span class="n">vocab_size</span> <span class="o">=</span> <span class="mi">32000</span>
+<span class="n">block_size</span> <span class="o">=</span> <span class="mi">256</span>
+<span class="n">n_layer</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">n_head</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">n_embd</span> <span class="o">=</span> <span class="mi">128</span>
+
+<span class="c1"># --- 构建 GPT-2 风格模型（复用第1章定义） ---</span>
+<span class="c1"># 需要第1章的 GPT, GPTConfig, CausalSelfAttention, MLP, Block</span>
+<span class="c1"># 这里用参数量公式直接计算</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">count_gpt2_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;计算 GPT-2 风格模型的参数量&quot;&quot;&quot;</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_layer</span>
+    <span class="n">emb</span> <span class="o">=</span> <span class="n">V</span> <span class="o">*</span> <span class="n">D</span>                          <span class="c1"># token embedding</span>
+    <span class="n">pe</span> <span class="o">=</span> <span class="n">block_size</span> <span class="o">*</span> <span class="n">D</span>                  <span class="c1"># position embedding</span>
+    <span class="n">per_block</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">3</span> <span class="o">*</span> <span class="n">D</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>              <span class="c1"># c_attn (QKV 合并, 含 bias)</span>
+        <span class="n">D</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span> <span class="n">D</span> <span class="o">+</span>                      <span class="c1"># c_proj (含 bias)</span>
+        <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">D</span> <span class="o">+</span> <span class="n">D</span><span class="p">)</span> <span class="o">+</span>                    <span class="c1"># 2 x LayerNorm (weight + bias)</span>
+        <span class="n">D</span> <span class="o">*</span> <span class="mi">4</span><span class="o">*</span><span class="n">D</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">D</span> <span class="o">+</span>                  <span class="c1"># c_fc (含 bias)</span>
+        <span class="mi">4</span><span class="o">*</span><span class="n">D</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span> <span class="n">D</span>                      <span class="c1"># c_proj (含 bias)</span>
+    <span class="p">)</span>
+    <span class="n">ln_f</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">D</span>                         <span class="c1"># final LayerNorm</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>                             <span class="c1"># weight tying, 不重复计算</span>
+    <span class="k">return</span> <span class="n">emb</span> <span class="o">+</span> <span class="n">pe</span> <span class="o">+</span> <span class="n">L</span> <span class="o">*</span> <span class="n">per_block</span> <span class="o">+</span> <span class="n">ln_f</span> <span class="o">+</span> <span class="n">head</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">count_modern_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_kv_heads</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;计算 ModernGPT 的参数量&quot;&quot;&quot;</span>
+    <span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">L</span> <span class="o">=</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">,</span> <span class="n">n_layer</span>
+    <span class="n">head_dim</span> <span class="o">=</span> <span class="n">D</span> <span class="o">//</span> <span class="n">n_head</span>
+    <span class="n">emb</span> <span class="o">=</span> <span class="n">V</span> <span class="o">*</span> <span class="n">D</span>                          <span class="c1"># token embedding</span>
+    <span class="c1"># RoPE: 0 可学习参数</span>
+    <span class="n">hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">D</span><span class="p">)</span>
+    <span class="n">hidden_dim</span> <span class="o">=</span> <span class="p">((</span><span class="n">hidden_dim</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span> <span class="o">*</span> <span class="mi">256</span>
+    <span class="n">per_block</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">n_head</span> <span class="o">*</span> <span class="n">head_dim</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>          <span class="c1"># wq (无 bias)</span>
+        <span class="n">n_kv_heads</span> <span class="o">*</span> <span class="n">head_dim</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>      <span class="c1"># wk (无 bias)</span>
+        <span class="n">n_kv_heads</span> <span class="o">*</span> <span class="n">head_dim</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>      <span class="c1"># wv (无 bias)</span>
+        <span class="n">D</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>                          <span class="c1"># wo (无 bias)</span>
+        <span class="mi">2</span> <span class="o">*</span> <span class="n">D</span> <span class="o">+</span>                          <span class="c1"># 2 x RMSNorm (weight only)</span>
+        <span class="n">hidden_dim</span> <span class="o">*</span> <span class="n">D</span> <span class="o">*</span> <span class="mi">3</span>               <span class="c1"># SwiGLU: w_gate + w_up + w_down (无 bias)</span>
+    <span class="p">)</span>
+    <span class="n">norm_f</span> <span class="o">=</span> <span class="n">D</span>                           <span class="c1"># final RMSNorm</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>                             <span class="c1"># weight tying</span>
+    <span class="k">return</span> <span class="n">emb</span> <span class="o">+</span> <span class="n">L</span> <span class="o">*</span> <span class="n">per_block</span> <span class="o">+</span> <span class="n">norm_f</span> <span class="o">+</span> <span class="n">head</span>
+
+<span class="n">gpt2_total</span> <span class="o">=</span> <span class="n">count_gpt2_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">modern_gqa4</span> <span class="o">=</span> <span class="n">count_modern_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">modern_gqa2</span> <span class="o">=</span> <span class="n">count_modern_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+<span class="n">modern_gqa1</span> <span class="o">=</span> <span class="n">count_modern_params</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">block_size</span><span class="p">,</span> <span class="n">n_layer</span><span class="p">,</span> <span class="n">n_head</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GPT-2 风格 vs Modern 风格 参数量对比&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;配置: </span><span class="si">{</span><span class="n">n_layer</span><span class="si">}</span><span class="s2"> 层, </span><span class="si">{</span><span class="n">n_head</span><span class="si">}</span><span class="s2"> heads, </span><span class="si">{</span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> embd, vocab=</span><span class="si">{</span><span class="n">vocab_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39;模型&#39;</span><span class="si">:</span><span class="s2">30s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;参数量&#39;</span><span class="si">:</span><span class="s2">&gt;12s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;比值&#39;</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">55</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;GPT-2 风格 (MHA, LN, GELU, AbsPE)&#39;</span><span class="si">:</span><span class="s2">30s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpt2_total</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;1.00x&#39;</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Modern (GQA-4=MHA, RMSNorm, SwiGLU, RoPE)&#39;</span><span class="si">:</span><span class="s2">30s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">modern_gqa4</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">modern_gqa4</span><span class="o">/</span><span class="n">gpt2_total</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">x&#39;</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Modern (GQA-2, RMSNorm, SwiGLU, RoPE)&#39;</span><span class="si">:</span><span class="s2">30s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">modern_gqa2</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">modern_gqa2</span><span class="o">/</span><span class="n">gpt2_total</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">x&#39;</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Modern (MQA, RMSNorm, SwiGLU, RoPE)&#39;</span><span class="si">:</span><span class="s2">30s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">modern_gqa1</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">modern_gqa1</span><span class="o">/</span><span class="n">gpt2_total</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">x&#39;</span><span class="si">:</span><span class="s2">&gt;8s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">参数量差异分析:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - RoPE 省去位置编码: -</span><span class="si">{</span><span class="n">block_size</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - RMSNorm 省去 bias: 每层 -</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">}</span><span class="s2"> 参数 x </span><span class="si">{</span><span class="n">n_layer</span><span class="si">}</span><span class="s2"> 层&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - GQA-2 减少 K/V 投影: 每层 -</span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n_head</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n_embd</span><span class="w"> </span><span class="o">//</span><span class="w"> </span><span class="n">n_head</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数 x </span><span class="si">{</span><span class="n">n_layer</span><span class="si">}</span><span class="s2"> 层&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - SwiGLU 多一个矩阵: 每层 +</span><span class="si">{</span><span class="n">hidden_dim</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">n_embd</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> 参数 x </span><span class="si">{</span><span class="n">n_layer</span><span class="si">}</span><span class="s2"> 层&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># Forward pass 测试：验证 ModernGPT 可正常训练</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># Baby 配置</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">ModernGPTConfig</span><span class="p">(</span>
+    <span class="n">vocab_size</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">n_kv_heads</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># GQA-2</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">ModernGPT</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">total_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ModernGPT 参数量: </span><span class="si">{</span><span class="n">total_params</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">total_params</span><span class="o">/</span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">M)&quot;</span><span class="p">)</span>
+
+<span class="c1"># Forward pass</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">64</span><span class="p">))</span>  <span class="c1"># batch=2, seq_len=64</span>
+<span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;logits shape: </span><span class="si">{</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;loss: </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 简单训练 10 步，验证 loss 下降</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">训练 10 步:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>
+    <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">step</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: loss = </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">ModernGPT 训练成功！loss 应在下降。&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ============================================================</span>
+<span class="c1"># 逐层参数分解：GPT-2 vs Modern</span>
+<span class="c1"># ============================================================</span>
+
+<span class="n">n_embd_demo</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">n_head_demo</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">n_kv_demo</span> <span class="o">=</span> <span class="mi">2</span>
+
+<span class="c1"># GPT-2 单层</span>
+<span class="n">n</span> <span class="o">=</span> <span class="n">n_embd_demo</span>
+<span class="n">gpt2_attn</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n</span>     <span class="c1"># c_attn + c_proj (含 bias)</span>
+<span class="n">gpt2_mlp</span> <span class="o">=</span> <span class="n">n</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">4</span><span class="o">*</span><span class="n">n</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n</span>     <span class="c1"># c_fc + c_proj (含 bias)</span>
+<span class="n">gpt2_norm</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">n</span><span class="p">)</span>                 <span class="c1"># 2 x LayerNorm</span>
+<span class="n">gpt2_total_layer</span> <span class="o">=</span> <span class="n">gpt2_attn</span> <span class="o">+</span> <span class="n">gpt2_mlp</span> <span class="o">+</span> <span class="n">gpt2_norm</span>
+
+<span class="c1"># Modern 单层</span>
+<span class="n">hd</span> <span class="o">=</span> <span class="n">n</span> <span class="o">//</span> <span class="n">n_head_demo</span>  <span class="c1"># head_dim = 32</span>
+<span class="n">hidden_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+<span class="n">hidden_dim</span> <span class="o">=</span> <span class="p">((</span><span class="n">hidden_dim</span> <span class="o">+</span> <span class="mi">255</span><span class="p">)</span> <span class="o">//</span> <span class="mi">256</span><span class="p">)</span> <span class="o">*</span> <span class="mi">256</span>
+<span class="n">mod_attn</span> <span class="o">=</span> <span class="n">n_head_demo</span><span class="o">*</span><span class="n">hd</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n_kv_demo</span><span class="o">*</span><span class="n">hd</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n_kv_demo</span><span class="o">*</span><span class="n">hd</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="n">n</span>  <span class="c1"># wq + wk + wv + wo (无 bias)</span>
+<span class="n">mod_ffn</span> <span class="o">=</span> <span class="n">hidden_dim</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="mi">3</span>             <span class="c1"># w_gate + w_up + w_down (无 bias)</span>
+<span class="n">mod_norm</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span>                         <span class="c1"># 2 x RMSNorm</span>
+<span class="n">mod_total_layer</span> <span class="o">=</span> <span class="n">mod_attn</span> <span class="o">+</span> <span class="n">mod_ffn</span> <span class="o">+</span> <span class="n">mod_norm</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;单层参数分解 (n_embd=</span><span class="si">{</span><span class="n">n_embd_demo</span><span class="si">}</span><span class="s2">, n_head=</span><span class="si">{</span><span class="n">n_head_demo</span><span class="si">}</span><span class="s2">):&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="s1">&#39;组件&#39;</span><span class="si">:</span><span class="s2">20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GPT-2&#39;</span><span class="si">:</span><span class="s2">&gt;12s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Modern&#39;</span><span class="si">:</span><span class="s2">&gt;12s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;说明&#39;</span><span class="si">:</span><span class="s2">&gt;30s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Attention&#39;</span><span class="si">:</span><span class="s2">20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpt2_attn</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mod_attn</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;MHA vs GQA-2&#39;</span><span class="si">:</span><span class="s2">&gt;30s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;FFN / MLP&#39;</span><span class="si">:</span><span class="s2">20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpt2_mlp</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mod_ffn</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;GELU 2-矩阵 vs SwiGLU 3-矩阵&#39;</span><span class="si">:</span><span class="s2">&gt;30s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;归一化&#39;</span><span class="si">:</span><span class="s2">20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpt2_norm</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mod_norm</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;LayerNorm vs RMSNorm&#39;</span><span class="si">:</span><span class="s2">&gt;30s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;单层合计&#39;</span><span class="si">:</span><span class="s2">20s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">gpt2_total_layer</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">mod_total_layer</span><span class="si">:</span><span class="s2">&gt;12,</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">mod_total_layer</span><span class="o">/</span><span class="n">gpt2_total_layer</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">x&#39;</span><span class="si">:</span><span class="s2">&gt;30s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="id12">
+<h3>集成分析<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
+<p><strong>参数量变化总结</strong>：</p>
+<ul class="simple">
+<li><p><strong>RMSNorm 减少</strong>：每层省 <span class="math notranslate nohighlight">\(n\)</span> 个参数（去掉 bias），总计 <span class="math notranslate nohighlight">\(2 \times n \times L\)</span></p></li>
+<li><p><strong>GQA 减少</strong>：K/V 投影矩阵缩小为原来的 <code class="docutils literal notranslate"><span class="pre">n_kv_heads</span> <span class="pre">/</span> <span class="pre">n_heads</span></code></p></li>
+<li><p><strong>RoPE 减少</strong>：去掉位置编码参数表（<span class="math notranslate nohighlight">\(T \times n_{embd}\)</span>）</p></li>
+<li><p><strong>SwiGLU 增加</strong>：多一个投影矩阵，FFN 参数约 1.5x（但 hidden_dim 缩小后约 1.0-1.2x）</p></li>
+</ul>
+<p><strong>综合来看</strong>：Modern 风格的参数量与 GPT-2 风格相近，但在以下方面有显著提升：</p>
+<ol class="arabic simple">
+<li><p>推理效率更高（更小的 KV cache、更快的归一化）</p></li>
+<li><p>训练更稳定（RMSNorm + SwiGLU 门控）</p></li>
+<li><p>位置编码更灵活（RoPE 支持长度外推）</p></li>
+</ol>
+<p><strong>生产级参考实现</strong>：HuggingFace <code class="docutils literal notranslate"><span class="pre">transformers</span></code> 库的 <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py">LlamaModel</a> 是这些改进的最佳参考。</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="id13">
+<h2>论文参考<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>改进</p></th>
+<th class="head"><p>论文</p></th>
+<th class="head"><p>链接</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RMSNorm</p></td>
+<td><p>Root Mean Square Layer Normalization (Zhang &amp; Sennrich, 2019)</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1910.07467">https://arxiv.org/abs/1910.07467</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SwiGLU</p></td>
+<td><p>GLU Variants Improve Transformer (Shazeer, 2020)</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2002.05202">https://arxiv.org/abs/2002.05202</a></p></td>
+</tr>
+<tr class="row-even"><td><p>RoPE</p></td>
+<td><p>RoFormer: Enhanced Transformer with Rotary Position Embedding (Su et al., 2021)</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2104.09864">https://arxiv.org/abs/2104.09864</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>GQA</p></td>
+<td><p>GQA: Training Generalized Multi-Query Transformer (Ainslie et al., 2023)</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2305.13245">https://arxiv.org/abs/2305.13245</a></p></td>
+</tr>
+<tr class="row-even"><td><p>参考</p></td>
+<td><p>HuggingFace Llama 源码</p></td>
+<td><p><a class="github reference external" href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py">huggingface/transformers</a></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="id14">
+<h2>练习<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>RMSNorm 实验</strong>：修改 <code class="docutils literal notranslate"><span class="pre">eps</span></code> 值（1e-5, 1e-6, 1e-8），观察输出变化。为什么通常用 1e-6？</p></li>
+<li><p><strong>SwiGLU 变体</strong>：实现其他 GLU 变体（ReGLU、GeGLU），对比它们与 SwiGLU 的差异。</p>
+<ul class="simple">
+<li><p>ReGLU: <code class="docutils literal notranslate"><span class="pre">ReLU(gate)</span> <span class="pre">*</span> <span class="pre">up</span></code></p></li>
+<li><p>GeGLU: <code class="docutils literal notranslate"><span class="pre">GELU(gate)</span> <span class="pre">*</span> <span class="pre">up</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>RoPE 长度外推</strong>：用 NTK-aware scaling 修改 <code class="docutils literal notranslate"><span class="pre">rope_theta</span></code>，让训练在 <code class="docutils literal notranslate"><span class="pre">block_size=256</span></code> 的模型能处理 <code class="docutils literal notranslate"><span class="pre">block_size=512</span></code> 的序列。</p>
+<ul class="simple">
+<li><p>提示：新的 <code class="docutils literal notranslate"><span class="pre">theta'</span> <span class="pre">=</span> <span class="pre">theta</span> <span class="pre">*</span> <span class="pre">(scale_factor)^(dim/(dim-2))</span></code>，其中 <code class="docutils literal notranslate"><span class="pre">scale_factor</span> <span class="pre">=</span> <span class="pre">new_length</span> <span class="pre">/</span> <span class="pre">old_length</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>GQA 消融</strong>：用相同的随机种子训练 baby-GPT 和 baby-ModernGPT（用 Shakespeare 数据集），对比两者的训练 loss 曲线。</p></li>
+<li><p><strong>阅读源码</strong>：打开 <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/src/transformers/models/llama/modeling_llama.py">HuggingFace Llama modeling_llama.py</a>，找到本章实现的每个组件对应的源码位置。注意 Llama 在哪些地方做了额外的优化（如 <code class="docutils literal notranslate"><span class="pre">sdpa</span></code>、<code class="docutils literal notranslate"><span class="pre">flash_attention</span></code>）。</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./notebooks"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ch10_full_pipeline.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">第10章：全流程实战</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ch12_moe_architecture.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">第12章：MoE 混合专家架构</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">改进路线图</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rmsnorm-vs-layernorm">11.1 RMSNorm vs LayerNorm</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#swiglu-vs-gelu">11.2 SwiGLU vs GELU</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rope">11.3 RoPE（旋转位置编码）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gqa">11.4 GQA（分组查询注意力）</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">理论</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#moderngpt">11.5 集成：组装 ModernGPT</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">集成分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">论文参考</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">练习</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

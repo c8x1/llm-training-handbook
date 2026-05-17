@@ -1,0 +1,1021 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>第13章：大规模预训练工程 &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/ch13_pretraining_engineering';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="第14章：推理模型与 GRPO" href="ch14_reasoning_grpo.html" />
+    <link rel="prev" title="第12章：MoE 混合专家架构" href="ch12_moe_architecture.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch11_modern_architecture.html">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch14_reasoning_grpo.html">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch15_long_context_inference.html">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/c8x1/llm-training-handbook/blob/main/notebooks/ch13_pretraining_engineering.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/notebooks/ch13_pretraining_engineering.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fnotebooks/ch13_pretraining_engineering.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/notebooks/ch13_pretraining_engineering.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>第13章：大规模预训练工程</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">1. 数据清洗流水线</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#minhash">MinHash 去重原理</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">MinHash 算法详解</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">2. 数据混合比例</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">为什么混合比例很重要</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#doremi">DoReMi 算法</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#deepseek-v3">DeepSeek-V3 的数据组成</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fp8">3. FP8 训练</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">FP8 两种格式</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">缩放因子粒度</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-token-prediction">4. Multi-token Prediction</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">5. 课程学习</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">练习</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">延伸阅读</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="id1">
+<h1>第13章：大规模预训练工程<a class="headerlink" href="#id1" title="Link to this heading">#</a></h1>
+<section id="id2">
+<h2>本章目标<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>理解为什么「80%的预训练是数据工程」</p></li>
+<li><p>掌握数据清洗、混合比例、FP8 训练、Multi-token 预测等关键技术</p></li>
+<li><p>了解 DeepSeek-V3 等模型背后的工程实践</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>前置知识<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>复习第3章：预训练基础</p></li>
+<li><p>复习第4章：分布式训练</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">IN_COLAB</span> <span class="o">=</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span>
+<span class="k">if</span> <span class="n">IN_COLAB</span><span class="p">:</span>
+    <span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="n">matplotlib</span> <span class="n">numpy</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;本地环境运行，请确保已按 intro.md 配置好环境&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id4">
+<h2>1. 数据清洗流水线<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<p>大规模预训练数据的典型处理流程：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>原始网页数据 → 去重 (MinHash) → 语言过滤 → 质量分类 → PII 去除 → 困惑度过滤 → 预训练数据
+</pre></div>
+</div>
+<section id="minhash">
+<h3>MinHash 去重原理<a class="headerlink" href="#minhash" title="Link to this heading">#</a></h3>
+<p>目标：高效判断两个文档是否「近似重复」，不需要逐一比较所有文档对。</p>
+<p>步骤：</p>
+<ol class="arabic simple">
+<li><p><strong>Shingling</strong>: 把文档拆成 k-gram 子串集合</p></li>
+<li><p><strong>MinHash 签名</strong>: 对每个 shingle 用 N 个哈希函数，取每个函数的最小值</p></li>
+<li><p><strong>Jaccard 估计</strong>: 两个文档 MinHash 签名中相同值的比例 ≈ Jaccard 相似度</p></li>
+</ol>
+<p>参考：<a class="reference external" href="https://huggingface.co/datasets/HuggingFaceFW/fineweb">FineWeb</a>, <a class="reference external" href="https://arxiv.org/abs/2306.01116">RefinedWeb</a> (Penedo et al., 2023)</p>
+</section>
+<section id="id5">
+<h3>MinHash 算法详解<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<div class="math notranslate nohighlight">
+\[J(A, B) = \frac{|A \cap B|}{|A \cup B|}\]</div>
+<p>Jaccard 相似度直接计算需要 <span class="math notranslate nohighlight">\(O(|A| \cdot |B|)\)</span>，对百万级文档不可行。</p>
+<p>MinHash 的核心性质：<span class="math notranslate nohighlight">\(P(\min_{h \in H}(h(A)) = \min_{h \in H}(h(B))) = J(A, B)\)</span></p>
+<p>即两个集合的最小哈希值相同的概率等于它们的 Jaccard 相似度。用 N 个独立哈希函数，统计相同比例即可估计 Jaccard。</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MinHashDedup</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;MinHash 近似去重。</span>
+<span class="sd">    </span>
+<span class="sd">    用 N 个哈希函数生成文档的紧凑签名，</span>
+<span class="sd">    通过签名相似度估计 Jaccard 相似度。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_hashes</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">shingle_size</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_hashes</span> <span class="o">=</span> <span class="n">num_hashes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shingle_size</span> <span class="o">=</span> <span class="n">shingle_size</span>
+        <span class="c1"># 生成 num_hashes 个不同的哈希种子</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="p">[</span><span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_hashes</span><span class="p">)]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shingling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;将文本拆成 k-gram 集合&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">shingle_size</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">shingle_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_hash_shingle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shingle</span><span class="p">,</span> <span class="n">seed</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;用指定种子哈希一个 shingle&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">((</span><span class="n">seed</span> <span class="o">+</span> <span class="n">shingle</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span> <span class="mi">16</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">signature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;计算文档的 MinHash 签名&quot;&quot;&quot;</span>
+        <span class="n">shingles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shingling</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">shingles</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_hashes</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span><span class="p">:</span>
+            <span class="n">min_hash</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_shingle</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">shingles</span><span class="p">)</span>
+            <span class="n">sig</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">min_hash</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sig</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">jaccard_estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sig1</span><span class="p">,</span> <span class="n">sig2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;通过签名估计 Jaccard 相似度&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">b</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sig1</span><span class="p">,</span> <span class="n">sig2</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_hashes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">exact_jaccard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text1</span><span class="p">,</span> <span class="n">text2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;精确 Jaccard（用于验证）&quot;&quot;&quot;</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shingling</span><span class="p">(</span><span class="n">text1</span><span class="p">)</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shingling</span><span class="p">(</span><span class="n">text2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">s1</span> <span class="o">&amp;</span> <span class="n">s2</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">s1</span> <span class="o">|</span> <span class="n">s2</span><span class="p">)</span> <span class="k">if</span> <span class="n">s1</span> <span class="o">|</span> <span class="n">s2</span> <span class="k">else</span> <span class="mi">0</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 演示：5 个文档的近似去重</span>
+<span class="n">docs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;The quick brown fox jumps over the lazy dog in the park on a sunny day&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;The quick brown fox jumps over the lazy dog in the park on a sunny day&quot;</span><span class="p">,</span>          <span class="c1"># 完全重复</span>
+    <span class="s2">&quot;The quick brown fox jumps over the lazy dog in the garden on a rainy day&quot;</span><span class="p">,</span>        <span class="c1"># 高度相似</span>
+    <span class="s2">&quot;A completely different document about machine learning and neural networks&quot;</span><span class="p">,</span>       <span class="c1"># 完全不同</span>
+    <span class="s2">&quot;Machine learning and neural networks are transforming technology today&quot;</span><span class="p">,</span>           <span class="c1"># 主题相似但文本不同</span>
+<span class="p">]</span>
+
+<span class="n">dedup</span> <span class="o">=</span> <span class="n">MinHashDedup</span><span class="p">(</span><span class="n">num_hashes</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">shingle_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">sigs</span> <span class="o">=</span> <span class="p">[</span><span class="n">dedup</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;文档间相似度矩阵（MinHash 估计 vs 精确 Jaccard）:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">docs</span><span class="p">)):</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">docs</span><span class="p">)):</span>
+        <span class="n">est</span> <span class="o">=</span> <span class="n">dedup</span><span class="o">.</span><span class="n">jaccard_estimate</span><span class="p">(</span><span class="n">sigs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">sigs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="n">exact</span> <span class="o">=</span> <span class="n">dedup</span><span class="o">.</span><span class="n">exact_jaccard</span><span class="p">(</span><span class="n">docs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">docs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="s2">&quot; ← 近似重复!&quot;</span> <span class="k">if</span> <span class="n">est</span> <span class="o">&gt;</span> <span class="mf">0.5</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  doc</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> vs doc</span><span class="si">{</span><span class="n">j</span><span class="si">}</span><span class="s2">: 估计=</span><span class="si">{</span><span class="n">est</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">  精确=</span><span class="si">{</span><span class="n">exact</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}{</span><span class="n">flag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">结论：设定阈值 &gt; 0.5，doc0 和 doc1/doc2 被标记为近似重复&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="id6">
+<h2>2. 数据混合比例<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<section id="id7">
+<h3>为什么混合比例很重要<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<p>预训练数据通常包含多个领域：网页文本、代码、数学、书籍、论文等。不同领域的比例直接影响模型能力：</p>
+<ul class="simple">
+<li><p><strong>代码比例高</strong> → 更好的推理和编程能力</p></li>
+<li><p><strong>数学比例高</strong> → 更好的逻辑推理</p></li>
+<li><p><strong>网页比例高</strong> → 更好的通用知识和对话能力</p></li>
+</ul>
+</section>
+<section id="doremi">
+<h3>DoReMi 算法<a class="headerlink" href="#doremi" title="Link to this heading">#</a></h3>
+<p>用一个小 proxy 模型自动学习最优领域权重：</p>
+<ol class="arabic simple">
+<li><p>训练一个小模型在各领域上的困惑度</p></li>
+<li><p>根据困惑度差异调整领域权重（困惑度高的领域给更多权重）</p></li>
+<li><p>用最优权重训练大模型</p></li>
+</ol>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2305.10429">DoReMi</a></p>
+</section>
+<section id="deepseek-v3">
+<h3>DeepSeek-V3 的数据组成<a class="headerlink" href="#deepseek-v3" title="Link to this heading">#</a></h3>
+<p>DeepSeek-V3 使用了约 14.8T tokens 的训练数据，其中代码和数学占比显著高于一般模型：</p>
+<ul class="simple">
+<li><p>这直接解释了为什么 DeepSeek 在编程和数学推理上表现突出</p></li>
+<li><p>参考：<a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> Section 3.1</p></li>
+</ul>
+</section>
+</section>
+<section id="fp8">
+<h2>3. FP8 训练<a class="headerlink" href="#fp8" title="Link to this heading">#</a></h2>
+<section id="id8">
+<h3>FP8 两种格式<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>格式</p></th>
+<th class="head"><p>Sign</p></th>
+<th class="head"><p>Exponent</p></th>
+<th class="head"><p>Mantissa</p></th>
+<th class="head"><p>动态范围</p></th>
+<th class="head"><p>精度</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>E4M3</p></td>
+<td><p>1 bit</p></td>
+<td><p>4 bits</p></td>
+<td><p>3 bits</p></td>
+<td><p>较小 (~±448)</p></td>
+<td><p>较高</p></td>
+</tr>
+<tr class="row-odd"><td><p>E5M2</p></td>
+<td><p>1 bit</p></td>
+<td><p>5 bits</p></td>
+<td><p>2 bits</p></td>
+<td><p>较大 (~±57344)</p></td>
+<td><p>较低</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>使用策略：</strong></p>
+<ul class="simple">
+<li><p>Forward pass 用 <strong>E4M3</strong>（需要更高精度保存激活值）</p></li>
+<li><p>Backward pass 用 <strong>E5M2</strong>（需要更大动态范围处理梯度）</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>缩放因子粒度<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Per-tensor</strong>: 整个张量一个缩放因子，最简单但精度损失最大</p></li>
+<li><p><strong>Per-block (tile)</strong>: 按 1×128 或 128×128 分块，精度和效率的平衡</p></li>
+<li><p><strong>Per-channel</strong>: 按输出通道，常用于权重</p></li>
+</ul>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2209.05433">FP8 Formats for Deep Learning</a> (Micikevicius et al., 2022), <a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> Section 3.3</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simulate_fp8_quantize</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;E4M3&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟 FP8 量化（简化版，仅展示核心概念）。</span>
+<span class="sd">    </span>
+<span class="sd">    实际 FP8 硬件有更复杂的舍入和异常值处理。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s1">&#39;E4M3&#39;</span><span class="p">:</span>
+        <span class="n">max_val</span> <span class="o">=</span> <span class="mf">448.0</span>   <span class="c1"># E4M3 最大值</span>
+        <span class="c1"># 3 bit mantissa → 2^3 = 8 个量化级别（每个 2 的幂区间内）</span>
+        <span class="n">mantissa_bits</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># E5M2</span>
+        <span class="n">max_val</span> <span class="o">=</span> <span class="mf">57344.0</span>  <span class="c1"># E5M2 最大值</span>
+        <span class="n">mantissa_bits</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1"># 简化：对称量化到 [-max_val, max_val]</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">max_val</span> <span class="o">/</span> <span class="n">tensor</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">)</span>
+    <span class="n">scaled</span> <span class="o">=</span> <span class="n">tensor</span> <span class="o">*</span> <span class="n">scale</span>
+    <span class="c1"># 模拟有限精度：四舍五入到整数后除以 scale</span>
+    <span class="n">quantized</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">scaled</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
+    <span class="c1"># Clamp 到范围</span>
+    <span class="n">quantized</span> <span class="o">=</span> <span class="n">quantized</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="o">-</span><span class="n">max_val</span><span class="p">,</span> <span class="n">max_val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">quantized</span><span class="p">,</span> <span class="n">scale</span>
+
+<span class="c1"># 演示：矩阵乘法的 FP8 量化误差</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>  <span class="c1"># 模拟激活</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">)</span>  <span class="c1"># 模拟权重</span>
+
+<span class="c1"># FP32 基准</span>
+<span class="n">result_fp32</span> <span class="o">=</span> <span class="n">A</span> <span class="o">@</span> <span class="n">B</span>
+
+<span class="c1"># FP8 量化</span>
+<span class="n">A_e4m3</span><span class="p">,</span> <span class="n">scale_a</span> <span class="o">=</span> <span class="n">simulate_fp8_quantize</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="s1">&#39;E4M3&#39;</span><span class="p">)</span>
+<span class="n">B_e4m3</span><span class="p">,</span> <span class="n">scale_b</span> <span class="o">=</span> <span class="n">simulate_fp8_quantize</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="s1">&#39;E4M3&#39;</span><span class="p">)</span>
+<span class="n">result_fp8</span> <span class="o">=</span> <span class="n">A_e4m3</span> <span class="o">@</span> <span class="n">B_e4m3</span>
+
+<span class="c1"># 误差分析</span>
+<span class="n">error</span> <span class="o">=</span> <span class="p">(</span><span class="n">result_fp32</span> <span class="o">-</span> <span class="n">result_fp8</span><span class="p">)</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+<span class="n">relative_error</span> <span class="o">=</span> <span class="n">error</span> <span class="o">/</span> <span class="n">result_fp32</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;FP32 结果范围: [</span><span class="si">{</span><span class="n">result_fp32</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result_fp32</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;FP8  结果范围: [</span><span class="si">{</span><span class="n">result_fp8</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">result_fp8</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;绝对误差: mean=</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">, max=</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;相对误差: mean=</span><span class="si">{</span><span class="n">relative_error</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4%</span><span class="si">}</span><span class="s2">, max=</span><span class="si">{</span><span class="n">relative_error</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">FP8 的价值：训练速度提升 ~2x（H100 上），代价是可接受的精度损失&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="multi-token-prediction">
+<h2>4. Multi-token Prediction<a class="headerlink" href="#multi-token-prediction" title="Link to this heading">#</a></h2>
+<section id="id10">
+<h3>核心思想<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<p>标准语言模型：每个位置只预测<strong>下一个</strong> token → 1 个训练信号/位置</p>
+<p>Multi-token prediction：每个位置同时预测<strong>未来 N 个</strong> token → N 个训练信号/位置</p>
+<p><strong>优势：</strong></p>
+<ol class="arabic simple">
+<li><p>更丰富的训练信号（不浪费中间表示）</p></li>
+<li><p>迫使模型做更长程的规划</p></li>
+<li><p>实验证明提升下游任务表现，尤其是代码和推理</p></li>
+</ol>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2404.19737">Better &amp; Faster Large Language Models via Multi-token Prediction</a> (Gloeckle et al., 2024)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiTokenGPT</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Multi-token prediction：共享 backbone + N 个独立预测头。</span>
+<span class="sd">    </span>
+<span class="sd">    这里简化为 2-token prediction（预测 next + next-next token）。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">n_predict</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_predict</span> <span class="o">=</span> <span class="n">n_predict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_size</span> <span class="o">=</span> <span class="n">block_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wte</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wpe</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">block_size</span><span class="p">,</span> <span class="n">n_embd</span><span class="p">)</span>
+        
+        <span class="c1"># 共享 Transformer backbone</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoderLayer</span><span class="p">(</span><span class="n">d_model</span><span class="o">=</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">nhead</span><span class="o">=</span><span class="n">n_head</span><span class="p">,</span> <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_layer</span><span class="p">)</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">n_embd</span><span class="p">)</span>
+        
+        <span class="c1"># N 个独立的预测头</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heads</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">n_embd</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_predict</span><span class="p">)</span>
+        <span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="n">B</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">idx</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wte</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">wpe</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
+        
+        <span class="c1"># Causal mask</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="o">.</span><span class="n">generate_square_subsequent_mask</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">idx</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">src_mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ln_f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        
+        <span class="c1"># 每个头预测不同距离的 token</span>
+        <span class="n">logits_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">head</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">head</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">heads</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">logits_list</span>
+
+<span class="c1"># 演示</span>
+<span class="n">vocab_size</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">MultiTokenGPT</span><span class="p">(</span><span class="n">vocab_size</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vocab_size</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">32</span><span class="p">))</span>
+<span class="n">logits_list</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">logits</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">logits_list</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Head </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> (预测第 </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> 个未来 token): logits shape = </span><span class="si">{</span><span class="n">logits</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 训练时：损失 = 各头的加权平均</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">multi_token_loss</span><span class="p">(</span><span class="n">logits_list</span><span class="p">,</span> <span class="n">targets_list</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;计算 multi-token prediction 的总损失。</span>
+<span class="sd">    </span>
+<span class="sd">    targets_list[i] 对应 head[i] 预测的第 (i+1) 个未来 token。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">logits_list</span><span class="p">)]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">logits_list</span><span class="p">)</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">logits</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">logits_list</span><span class="p">,</span> <span class="n">targets_list</span><span class="p">,</span> <span class="n">weights</span><span class="p">):</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">targets</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">w</span> <span class="o">*</span> <span class="n">loss</span>
+    <span class="k">return</span> <span class="n">total_loss</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">MultiTokenGPT 参数量: </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="id11">
+<h2>5. 课程学习<a class="headerlink" href="#id11" title="Link to this heading">#</a></h2>
+<section id="id12">
+<h3>核心思想<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
+<p>模仿人类学习过程：从简单到困难，从已知到未知。</p>
+<p><strong>常见策略：</strong></p>
+<ol class="arabic simple">
+<li><p><strong>难度递增</strong>：先训简单文本（如维基百科），再训复杂文本（如数学证明）</p></li>
+<li><p><strong>领域渐进</strong>：先训通用语料，再逐步加入代码、数学等专业领域</p></li>
+<li><p><strong>上下文长度渐进</strong>：先训短序列（4K），再逐渐增长（32K → 128K）</p></li>
+</ol>
+<p>DeepSeek-V3 在训练过程中动态调整数据领域比例，结合多阶段训练策略。</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> 训练细节</p>
+</section>
+</section>
+<section id="id13">
+<h2>练习<a class="headerlink" href="#id13" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p>修改 MinHash 的 <code class="docutils literal notranslate"><span class="pre">num_hashes</span></code> 参数（32, 64, 128, 256），观察估计精度变化</p></li>
+<li><p>在 <code class="docutils literal notranslate"><span class="pre">MultiTokenGPT</span></code> 中添加第 3 个预测头（预测第 3 个未来 token），观察损失变化</p></li>
+<li><p>思考：如果你的预训练数据中代码占 60%，可能会带来什么副作用？</p></li>
+</ol>
+</section>
+<section id="id14">
+<h2>延伸阅读<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://huggingface.co/datasets/HuggingFaceFW/fineweb">FineWeb 数据集</a> — 大规模清洗后的预训练数据</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2306.01116">RefinedWeb</a> — RefinedWeb 数据处理方法 (Penedo et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2305.10429">DoReMi</a> — 最优数据混合比例学习</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2209.05433">FP8 Formats</a> — FP8 训练格式 (Micikevicius et al., 2022)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2404.19737">Multi-token Prediction</a> — 多 token 预测 (Gloeckle et al., 2024)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2412.19437">DeepSeek-V3</a> — 大规模预训练工程实践</p></li>
+</ul>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./notebooks"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ch12_moe_architecture.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">第12章：MoE 混合专家架构</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ch14_reasoning_grpo.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">第14章：推理模型与 GRPO</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">1. 数据清洗流水线</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#minhash">MinHash 去重原理</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">MinHash 算法详解</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">2. 数据混合比例</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">为什么混合比例很重要</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#doremi">DoReMi 算法</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#deepseek-v3">DeepSeek-V3 的数据组成</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fp8">3. FP8 训练</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">FP8 两种格式</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">缩放因子粒度</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-token-prediction">4. Multi-token Prediction</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">5. 课程学习</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">核心思想</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">练习</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">延伸阅读</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

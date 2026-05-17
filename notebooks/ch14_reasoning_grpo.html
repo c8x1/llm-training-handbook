@@ -1,0 +1,1553 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>第14章：推理模型与 GRPO &#8212; LLM Training Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/ch14_reasoning_grpo';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="第15章：长上下文与高效推理" href="ch15_long_context_inference.html" />
+    <link rel="prev" title="第13章：大规模预训练工程" href="ch13_pretraining_engineering.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">本教程以实战为主，概念为辅。目标读者：有深度学习经验的 AI 算法工程师。</div>
+</aside>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LLM Training Handbook</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../intro.html">
+                    LLM Training Handbook
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part I - 基础架构与预训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch01_gpt_architecture.html">第1章：GPT 架构拆解</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch02_tokenization.html">第2章：Tokenizer 与数据工程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch03_pretraining.html">第3章：预训练实战</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch04_distributed_training.html">第4章：分布式训练与效率优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part II - 对齐训练</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch09_inference_optimization.html">第9章：推理优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch10_full_pipeline.html">第10章：全流程实战</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Part IV - 进阶：走向 SOTA</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="ch11_modern_architecture.html">第11章：现代 Transformer 架构改进</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch12_moe_architecture.html">第12章：MoE 混合专家架构</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch13_pretraining_engineering.html">第13章：大规模预训练工程</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">第14章：推理模型与 GRPO</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch15_long_context_inference.html">第15章：长上下文与高效推理</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch16_modern_gpt_build.html">第16章：综合实战 — 从 GPT-2 到现代架构</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-launch-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Launch interactive content">
+    <i class="fas fa-rocket"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://colab.research.google.com/github/c8x1/llm-training-handbook/blob/main/notebooks/ch14_reasoning_grpo.ipynb" target="_blank"
+   class="btn btn-sm dropdown-item"
+   title="Launch on Colab"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  
+    <img alt="Colab logo" src="../_static/images/logo_colab.png">
+  </span>
+<span class="btn__text-container">Colab</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/edit/main/notebooks/ch14_reasoning_grpo.ipynb" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/c8x1/llm-training-handbook/issues/new?title=Issue%20on%20page%20%2Fnotebooks/ch14_reasoning_grpo.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/notebooks/ch14_reasoning_grpo.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>第14章：推理模型与 GRPO</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sft-rlhf-rl">14.1 从 SFT+RLHF 到纯 RL 推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#deepseek-r1-zero-sft-rl">DeepSeek-R1-Zero 实验：跳过 SFT，直接用 RL 训练推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">关键发现</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">核心洞察</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#r1-zero">R1-Zero 的问题</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grpo-group-relative-policy-optimization">14.2 GRPO (Group Relative Policy Optimization)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#value-network">核心创新：消除 Value Network</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">GRPO 算法流程</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo">与 PPO 的关键区别</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">GRPO 直觉理解</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#process-reward-model-prm">14.3 Process Reward Model (PRM)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#outcome-rm-vs-process-rm">Outcome RM vs Process RM</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">直觉对比</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prm">PRM 对推理训练的意义</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#r1">14.4 R1 训练管线</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">各阶段要点</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-time-compute-scaling">14.5 Test-time Compute Scaling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">推理阶段的计算量也能提升效果</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">主要方法</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scaling">Scaling 分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grpotrainer">14.6 动手实验：使用 GRPOTrainer 训练数学推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">GRPO 实验分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">本章总结</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">推理模型的核心范式转变</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">参考文献</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id15">练习</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="grpo">
+<h1>第14章：推理模型与 GRPO<a class="headerlink" href="#grpo" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>本章目标<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>理解 DeepSeek-R1 的突破——通过纯 RL 训练推理能力</p></li>
+<li><p>掌握 GRPO (Group Relative Policy Optimization) 的原理与实现</p></li>
+<li><p>理解 Process Reward Model (PRM) 与 Outcome Reward Model (ORM) 的区别</p></li>
+<li><p>了解 R1 训练管线与 test-time compute scaling</p></li>
+<li><p>使用 trl GRPOTrainer 完成 GRPO 训练实验</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>前置知识<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>第7章：RLHF (PPO) —— 理解 policy gradient、value network、advantage</p></li>
+<li><p>第8章：DPO —— 理解 reference model、偏好优化</p></li>
+</ul>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="n">IN_COLAB</span> <span class="o">=</span> <span class="s2">&quot;google.colab&quot;</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span>
+
+<span class="k">if</span> <span class="n">IN_COLAB</span><span class="p">:</span>
+    <span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="n">torch</span> <span class="n">transformers</span> <span class="n">trl</span> <span class="n">peft</span> <span class="n">datasets</span> <span class="n">accelerate</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;本地环境运行，请确保已安装: torch, transformers, trl, peft, datasets, accelerate&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PyTorch 版本: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">__version__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CUDA 可用: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GPU: </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="sft-rlhf-rl">
+<h2>14.1 从 SFT+RLHF 到纯 RL 推理<a class="headerlink" href="#sft-rlhf-rl" title="Link to this heading">#</a></h2>
+<section id="deepseek-r1-zero-sft-rl">
+<h3>DeepSeek-R1-Zero 实验：跳过 SFT，直接用 RL 训练推理<a class="headerlink" href="#deepseek-r1-zero-sft-rl" title="Link to this heading">#</a></h3>
+<p>传统 RLHF 流程是 SFT → Reward Model → PPO，但 DeepSeek-R1-Zero 做了一个大胆实验：<strong>跳过 SFT，直接在 base model 上做 RL</strong>。</p>
+<section id="id3">
+<h4>关键发现<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
+<ol class="arabic simple">
+<li><p><strong>Chain-of-Thought (CoT) 自发涌现</strong>：模型学会在给出答案前展开详细推理过程，而非直接输出结论</p></li>
+<li><p><strong>Self-correction（自我纠正）</strong>：模型发现推理有误时，会主动回退并修正（”wait, let me reconsider…”）</p></li>
+<li><p><strong>“Aha moment”</strong>：模型在训练中突然获得新的解题策略，表现出类似”顿悟”的行为</p></li>
+</ol>
+</section>
+<section id="id4">
+<h4>核心洞察<a class="headerlink" href="#id4" title="Link to this heading">#</a></h4>
+<blockquote>
+<div><p>RL alone can elicit reasoning without human demonstrations.</p>
+</div></blockquote>
+<p>这意味着：推理能力并不一定需要人类示范来”教”，RL 的奖励信号足以让模型自主发现有效的推理策略。</p>
+</section>
+<section id="r1-zero">
+<h4>R1-Zero 的问题<a class="headerlink" href="#r1-zero" title="Link to this heading">#</a></h4>
+<p>虽然 R1-Zero 证明了纯 RL 的可行性，但直接输出存在以下问题：</p>
+<ul class="simple">
+<li><p>输出格式不统一（推理过程混杂，难以解析）</p></li>
+<li><p>语言混合（中英文混杂）</p></li>
+<li><p>可读性差</p></li>
+</ul>
+<p>因此 DeepSeek-R1（非 Zero 版本）引入了冷启动 SFT + 多阶段管线来解决这些问题（详见 14.4 节）。</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a> Section 2</p>
+</section>
+</section>
+</section>
+<section id="grpo-group-relative-policy-optimization">
+<h2>14.2 GRPO (Group Relative Policy Optimization)<a class="headerlink" href="#grpo-group-relative-policy-optimization" title="Link to this heading">#</a></h2>
+<section id="value-network">
+<h3>核心创新：消除 Value Network<a class="headerlink" href="#value-network" title="Link to this heading">#</a></h3>
+<p>PPO 需要一个额外的 Value Network (Critic) 来估计 advantage：
+$<span class="math notranslate nohighlight">\(A(s,a) = r + \gamma V(s') - V(s)\)</span>$</p>
+<p>但训练 Critic 既昂贵又不稳定。GRPO 的思路是：<strong>用 group baseline 替代 value network</strong>。</p>
+</section>
+<section id="id5">
+<h3>GRPO 算法流程<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<p>对于每个 prompt <span class="math notranslate nohighlight">\(q\)</span>：</p>
+<ol class="arabic simple">
+<li><p><strong>采样 G 个输出</strong>：<span class="math notranslate nohighlight">\(\{o_1, o_2, ..., o_G\}\)</span> 从当前策略 <span class="math notranslate nohighlight">\(\pi_\theta\)</span> 采样</p></li>
+<li><p><strong>打分</strong>：用 reward model 给每个输出打分 <span class="math notranslate nohighlight">\(\{r_1, r_2, ..., r_G\}\)</span></p></li>
+<li><p><strong>组内归一化 advantage</strong>：
+$<span class="math notranslate nohighlight">\(\hat{A}_i = \frac{r_i - \text{mean}(r)}{\text{std}(r)}\)</span>$</p></li>
+<li><p><strong>优化 clipped surrogate objective</strong>（类似 PPO）：
+$<span class="math notranslate nohighlight">\(\mathcal{L}_{GRPO} = \mathbb{E}\left[\min\left(\rho_i \hat{A}_i, \; \text{clip}(\rho_i, 1-\epsilon, 1+\epsilon) \hat{A}_i\right)\right] - \beta \cdot D_{KL}(\pi_\theta \| \pi_{ref})\)</span>$</p></li>
+</ol>
+<p>其中 <span class="math notranslate nohighlight">\(\rho_i = \frac{\pi_\theta(o_i|q)}{\pi_{old}(o_i|q)}\)</span> 是重要性采样比率。</p>
+</section>
+<section id="ppo">
+<h3>与 PPO 的关键区别<a class="headerlink" href="#ppo" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>维度</p></th>
+<th class="head"><p>PPO</p></th>
+<th class="head"><p>GRPO</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Value Network</p></td>
+<td><p>需要 Critic 网络</p></td>
+<td><p>不需要</p></td>
+</tr>
+<tr class="row-odd"><td><p>Advantage 计算</p></td>
+<td><p><span class="math notranslate nohighlight">\(A = r + \gamma V(s') - V(s)\)</span></p></td>
+<td><p>组内 z-score 归一化</p></td>
+</tr>
+<tr class="row-even"><td><p>Baseline</p></td>
+<td><p>由 Critic 学习</p></td>
+<td><p>组内均值</p></td>
+</tr>
+<tr class="row-odd"><td><p>显存开销</p></td>
+<td><p>高（多一个 Critic）</p></td>
+<td><p>低</p></td>
+</tr>
+<tr class="row-even"><td><p>适用场景</p></td>
+<td><p>通用 RL</p></td>
+<td><p>多采样对比式任务</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>GRPO 的优势在于：同一个 prompt 的多个输出天然形成对比组，
+好输出的 advantage 为正（被强化），差输出的 advantage 为负（被抑制）。</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a> Section 2.3, <a class="reference external" href="https://huggingface.co/docs/trl/main_classes/grpo_trainer">trl GRPOTrainer</a></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">grpo_compute_advantages</span><span class="p">(</span><span class="n">rewards</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    计算组内归一化 advantage（GRPO 的核心操作）。</span>
+
+<span class="sd">    对于同一 prompt 的 G 个输出，将它们的 reward 做 z-score 归一化。</span>
+<span class="sd">    - advantage &gt; 0：比组内平均好，应该被强化</span>
+<span class="sd">    - advantage &lt; 0：比组内平均差，应该被抑制</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rewards: 同一 prompt 的 G 个输出的 reward 列表</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        advantages: 归一化后的 advantage 张量</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rewards_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rewards</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">mean_r</span> <span class="o">=</span> <span class="n">rewards_tensor</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">std_r</span> <span class="o">=</span> <span class="n">rewards_tensor</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+    <span class="c1"># 防止除零：如果所有 reward 相同，advantage 全为 0</span>
+    <span class="k">if</span> <span class="n">std_r</span> <span class="o">&lt;</span> <span class="mf">1e-8</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">rewards_tensor</span><span class="p">)</span>
+
+    <span class="n">advantages</span> <span class="o">=</span> <span class="p">(</span><span class="n">rewards_tensor</span> <span class="o">-</span> <span class="n">mean_r</span><span class="p">)</span> <span class="o">/</span> <span class="n">std_r</span>
+    <span class="k">return</span> <span class="n">advantages</span>
+
+
+<span class="c1"># 演示：模拟一个 prompt 的 4 个输出的 reward</span>
+<span class="n">rewards_example</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+<span class="n">advantages</span> <span class="o">=</span> <span class="n">grpo_compute_advantages</span><span class="p">(</span><span class="n">rewards_example</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== GRPO Advantage 计算示例 ===&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rewards:    </span><span class="si">{</span><span class="n">rewards_example</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean:       </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rewards_example</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Std:        </span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">rewards_example</span><span class="p">)</span><span class="o">.</span><span class="n">std</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Advantages: </span><span class="si">{</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">advantages</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;解读：&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  输出 0 (reward=0.8): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> &gt; 0 → 比平均好，被强化&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  输出 1 (reward=0.3): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> &lt; 0 → 比平均差，被抑制&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  输出 2 (reward=1.0): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> &gt; 0 → 最好，被强化最多&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  输出 3 (reward=0.1): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> &lt; 0 → 最差，被抑制最多&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">grpo_loss</span><span class="p">(</span><span class="n">log_probs_new</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+              <span class="n">log_probs_old</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+              <span class="n">log_probs_ref</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+              <span class="n">advantages</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+              <span class="n">clip_epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
+              <span class="n">kl_coef</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    手写简化版 GRPO loss（约 50 行核心逻辑）。</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        log_probs_new:  当前策略 π_θ 对每个输出的 log probability, shape [G]</span>
+<span class="sd">        log_probs_old:  旧策略 π_old 对每个输出的 log probability, shape [G]</span>
+<span class="sd">        log_probs_ref:  参考策略 π_ref 对每个输出的 log probability, shape [G]</span>
+<span class="sd">        advantages:     组内归一化的 advantage, shape [G]</span>
+<span class="sd">        clip_epsilon:   PPO 裁剪参数</span>
+<span class="sd">        kl_coef:        KL 惩罚系数 β</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        loss: 标量 loss（要最小化，因此取负号）</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># 1. 计算重要性采样比率 ratio = π_new / π_old</span>
+    <span class="n">log_ratio</span> <span class="o">=</span> <span class="n">log_probs_new</span> <span class="o">-</span> <span class="n">log_probs_old</span>
+    <span class="n">ratio</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_ratio</span><span class="p">)</span>  <span class="c1"># shape [G]</span>
+
+    <span class="c1"># 2. Clipped surrogate objective（PPO clip）</span>
+    <span class="c1">#    对 advantage &gt; 0 的输出：ratio 被限制在 (1+ε)，防止过度强化</span>
+    <span class="c1">#    对 advantage &lt; 0 的输出：ratio 被限制在 (1-ε)，防止过度抑制</span>
+    <span class="n">surr1</span> <span class="o">=</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">advantages</span>
+    <span class="n">surr2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">clip_epsilon</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">clip_epsilon</span><span class="p">)</span> <span class="o">*</span> <span class="n">advantages</span>
+    <span class="n">policy_loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">torch</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">surr1</span><span class="p">,</span> <span class="n">surr2</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>  <span class="c1"># 取负号因为要做梯度下降</span>
+
+    <span class="c1"># 3. KL 散度惩罚：防止策略偏离 reference 太远</span>
+    <span class="c1">#    D_KL(π_θ || π_ref) ≈ E[log(π_θ / π_ref)]</span>
+    <span class="n">kl_penalty</span> <span class="o">=</span> <span class="n">kl_coef</span> <span class="o">*</span> <span class="p">(</span><span class="n">log_probs_new</span> <span class="o">-</span> <span class="n">log_probs_ref</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span>
+
+    <span class="c1"># 4. 总 loss</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">policy_loss</span> <span class="o">+</span> <span class="n">kl_penalty</span>
+    <span class="k">return</span> <span class="n">loss</span>
+
+
+<span class="c1"># ===== 演示：模拟 GRPO 的一个训练步 =====</span>
+<span class="n">G</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># 每个 prompt 生成 4 个输出</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># 模拟 log probabilities（实际中由模型 forward 计算得到）</span>
+<span class="n">log_probs_old</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="o">-</span><span class="mf">2.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.8</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.2</span><span class="p">])</span>  <span class="c1"># 旧策略</span>
+<span class="n">log_probs_new</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="o">-</span><span class="mf">1.9</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.3</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.6</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.5</span><span class="p">])</span>  <span class="c1"># 当前策略（轻微更新）</span>
+<span class="n">log_probs_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([</span><span class="o">-</span><span class="mf">2.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.4</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.7</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.3</span><span class="p">])</span>  <span class="c1"># 参考策略</span>
+
+<span class="c1"># 模拟 reward 并计算 advantage</span>
+<span class="n">rewards</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]</span>
+<span class="n">advantages</span> <span class="o">=</span> <span class="n">grpo_compute_advantages</span><span class="p">(</span><span class="n">rewards</span><span class="p">)</span>
+
+<span class="c1"># 计算 GRPO loss</span>
+<span class="n">loss</span> <span class="o">=</span> <span class="n">grpo_loss</span><span class="p">(</span><span class="n">log_probs_new</span><span class="p">,</span> <span class="n">log_probs_old</span><span class="p">,</span> <span class="n">log_probs_ref</span><span class="p">,</span> <span class="n">advantages</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== GRPO Loss 计算示例 ===&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Outputs:    G=</span><span class="si">{</span><span class="n">G</span><span class="si">}</span><span class="s2"> 个输出&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rewards:    </span><span class="si">{</span><span class="n">rewards</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Advantages: </span><span class="si">{</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">a</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1">&#39;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">advantages</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GRPO Loss:  </span><span class="si">{</span><span class="n">loss</span><span class="o">.</span><span class="n">item</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;关键理解：&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - 输出 2 (best, r=1.0): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, ratio=</span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_probs_new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">log_probs_old</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - 输出 3 (worst, r=0.1): advantage=</span><span class="si">{</span><span class="n">advantages</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, ratio=</span><span class="si">{</span><span class="n">torch</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">log_probs_new</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">log_probs_old</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - 梯度会让好的输出 (advantage&gt;0) 的概率更高，差的输出 (advantage&lt;0) 的概率更低&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="id6">
+<h3>GRPO 直觉理解<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<p>GRPO 的核心思想可以类比为”相对排名”：</p>
+<ol class="arabic simple">
+<li><p><strong>同一个问题，多个人回答</strong>：模型对同一个 prompt 生成 G 个不同的回答</p></li>
+<li><p><strong>互相比较</strong>：不依赖绝对分数，而是看每个回答相对于组内平均的表现</p></li>
+<li><p><strong>奖优罚劣</strong>：比平均好的被强化，比平均差的被抑制</p></li>
+<li><p><strong>clip 保险</strong>：防止某一次更新幅度过大（与 PPO 相同的安全机制）</p></li>
+</ol>
+<p>之所以不需要 Value Network，是因为<strong>组内多个样本的 reward 分布本身就提供了 baseline</strong>。
+这类似于让同一批学生做同一道题，用班级平均分作为基准来评价每个学生的表现。</p>
+<p>GRPO 特别适合推理任务，因为：</p>
+<ul class="simple">
+<li><p>推理任务的 reward 信号明确（答案对/错、部分分数）</p></li>
+<li><p>多次采样的成本可控（推理题通常较短）</p></li>
+<li><p>组内对比能准确区分”好的推理路径”和”差的推理路径”</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="process-reward-model-prm">
+<h2>14.3 Process Reward Model (PRM)<a class="headerlink" href="#process-reward-model-prm" title="Link to this heading">#</a></h2>
+<section id="outcome-rm-vs-process-rm">
+<h3>Outcome RM vs Process RM<a class="headerlink" href="#outcome-rm-vs-process-rm" title="Link to this heading">#</a></h3>
+<p><strong>Outcome Reward Model (ORM)</strong>：只对最终答案打一个分数</p>
+<ul class="simple">
+<li><p>优点：简单，标注成本低</p></li>
+<li><p>缺点：奖励信号稀疏——一个多步推理只有结尾有一个分数</p></li>
+</ul>
+<p><strong>Process Reward Model (PRM)</strong>：对推理的<strong>每一步</strong>打分</p>
+<ul class="simple">
+<li><p>优点：奖励信号更密集，能定位哪一步出了错</p></li>
+<li><p>缺点：标注成本高（需要人类标注每一步的正确性）</p></li>
+</ul>
+</section>
+<section id="id7">
+<h3>直觉对比<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>问题: 求 (3 + 5) × 2 的值
+
+推理过程:
+  Step 1: 3 + 5 = 8       ← PRM: 1.0 (正确)
+  Step 2: 8 × 2 = 16      ← PRM: 1.0 (正确)
+  Answer: 16               ← ORM: 1.0 (正确)
+
+对比错误案例:
+  Step 1: 3 + 5 = 8       ← PRM: 1.0 (正确)
+  Step 2: 8 × 2 = 14      ← PRM: 0.0 (错误！)
+  Answer: 14               ← ORM: 0.0 (最终答案错)
+</pre></div>
+</div>
+<p>ORM 只知道最终答案错了，但不知道哪一步出错。
+PRM 能精确定位 Step 2 的计算错误，提供更有信息量的学习信号。</p>
+</section>
+<section id="prm">
+<h3>PRM 对推理训练的意义<a class="headerlink" href="#prm" title="Link to this heading">#</a></h3>
+<p>对于多步推理任务（数学、逻辑、代码），PRM 的优势尤为明显：</p>
+<ul class="simple">
+<li><p><strong>更密集的反馈</strong>：每一步都有 reward，而非只有最终结果</p></li>
+<li><p><strong>更精确的 credit assignment</strong>：能区分”第一步就错了”和”最后一步才错”</p></li>
+<li><p><strong>更好的搜索引导</strong>：在 tree search 中，PRM 可以剪枝掉早期就出错的路径</p></li>
+</ul>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2305.20050">Let’s Verify Step by Step</a> (Lightman et al., 2023)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 演示 ORM vs PRM 的奖励差异</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MockReasoningTrace</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟一个多步推理过程&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">step_correct</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="n">steps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_correct</span> <span class="o">=</span> <span class="n">step_correct</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">final_correct</span> <span class="o">=</span> <span class="n">step_correct</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">step_correct</span> <span class="k">else</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">orm_score</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Outcome RM: 只看最终答案是否正确&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">final_correct</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">prm_scores</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process RM: 对每一步打分&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">c</span> <span class="k">else</span> <span class="mf">0.0</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_correct</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">prm_total</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;PRM 总分：所有步骤分数之和&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prm_scores</span><span class="p">())</span>
+
+
+<span class="c1"># 案例 1：推理完全正确</span>
+<span class="n">trace_good</span> <span class="o">=</span> <span class="n">MockReasoningTrace</span><span class="p">(</span>
+    <span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;3 + 5 = 8&quot;</span><span class="p">,</span> <span class="s2">&quot;8 × 2 = 16&quot;</span><span class="p">],</span>
+    <span class="n">step_correct</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># 案例 2：第一步对，第二步错（中间出错）</span>
+<span class="n">trace_mid</span> <span class="o">=</span> <span class="n">MockReasoningTrace</span><span class="p">(</span>
+    <span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;3 + 5 = 8&quot;</span><span class="p">,</span> <span class="s2">&quot;8 × 2 = 14&quot;</span><span class="p">],</span>
+    <span class="n">step_correct</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># 案例 3：第一步就错</span>
+<span class="n">trace_bad</span> <span class="o">=</span> <span class="n">MockReasoningTrace</span><span class="p">(</span>
+    <span class="n">steps</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;3 + 5 = 7&quot;</span><span class="p">,</span> <span class="s2">&quot;7 × 2 = 14&quot;</span><span class="p">],</span>
+    <span class="n">step_correct</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== ORM vs PRM 对比 ===&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;案例&#39;</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;ORM&#39;</span><span class="si">:</span><span class="s2">&lt;8</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;PRM (逐步)&#39;</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;PRM 总分&#39;</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">trace</span> <span class="ow">in</span> <span class="p">[(</span><span class="s2">&quot;完全正确&quot;</span><span class="p">,</span> <span class="n">trace_good</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;中间出错&quot;</span><span class="p">,</span> <span class="n">trace_mid</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;第一步错&quot;</span><span class="p">,</span> <span class="n">trace_bad</span><span class="p">)]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">trace</span><span class="o">.</span><span class="n">orm_score</span><span class="p">()</span><span class="si">:</span><span class="s2">&lt;8.1f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">prm_scores</span><span class="p">())</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">trace</span><span class="o">.</span><span class="n">prm_total</span><span class="p">()</span><span class="si">:</span><span class="s2">&lt;10.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;关键观察：&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  ORM 下：&#39;中间出错&#39;和&#39;第一步错&#39;得分相同 (都是 0.0)，无法区分&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  PRM 下：&#39;中间出错&#39;得分 (1.0) &gt; &#39;第一步错&#39; (0.0)，能区分错误位置&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  PRM 提供了更密集、更有信息量的奖励信号&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="r1">
+<h2>14.4 R1 训练管线<a class="headerlink" href="#r1" title="Link to this heading">#</a></h2>
+<p>DeepSeek-R1 采用了多阶段训练管线，而非 R1-Zero 的纯 RL 方案：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>┌─────────────────────────────────────────────────────────────────┐
+│                    DeepSeek-R1 训练管线                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Stage 1: Cold-start SFT（冷启动微调）                          │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ Base Model → SFT with few long-CoT data  │                   │
+│  │ 目的：统一输出格式，教会 &lt;think&lt;/think&lt;/think                  │
+│  └──────────────────────┬───────────────────┘                   │
+│                         ▼                                       │
+│  Stage 2: RL with GRPO（推理能力 RL 训练）                      │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ GRPO on math/code/science tasks          │                   │
+│  │ Reward: correctness + format + language   │                   │
+│  └──────────────────────┬───────────────────┘                   │
+│                         ▼                                       │
+│  Stage 3: Rejection Sampling + SFT（拒绝采样 + SFT）            │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ 从 RL 模型采样，筛选高质量 CoT 数据       │                   │
+│  │ 合并通用 SFT 数据，重新做 SFT              │                   │
+│  └──────────────────────┬───────────────────┘                   │
+│                         ▼                                       │
+│  Stage 4: All-task RL（全场景 RL）                              │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ 在所有场景上做 RL（推理+写作+对话+...）    │                   │
+│  │ 不同场景使用不同 reward signal             │                   │
+│  └──────────────────────┬───────────────────┘                   │
+│                         ▼                                       │
+│  Stage 5: Distillation（蒸馏）                                  │
+│  ┌──────────────────────────────────────────┐                   │
+│  │ R1 (671B) → 蒸馏到更小的模型 (1.5B~70B)  │                   │
+│  │ 蒸馏效果 &gt; 直接在小模型上做 RL             │                   │
+│  └──────────────────────────────────────────┘                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+</pre></div>
+</div>
+<section id="id8">
+<h3>各阶段要点<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<p><strong>Stage 1 - 冷启动 SFT</strong></p>
+<ul class="simple">
+<li><p>用少量高质量的 long-CoT 数据做 SFT</p></li>
+<li><p>目的是让模型学会结构化输出（如 <code class="docutils literal notranslate"><span class="pre">&lt;think&lt;/think</span></code> 标签包裹推理过程）</p></li>
+<li><p>解决 R1-Zero 的输出格式混乱问题</p></li>
+</ul>
+<p><strong>Stage 2 - RL with GRPO</strong></p>
+<ul class="simple">
+<li><p>在推理密集型任务（数学、代码、科学）上做 GRPO</p></li>
+<li><p>使用 correctness reward（答案是否正确）+ format reward（格式是否规范）</p></li>
+<li><p>这是最关键的推理能力提升阶段</p></li>
+</ul>
+<p><strong>Stage 3 - Rejection Sampling + SFT</strong></p>
+<ul class="simple">
+<li><p>从 Stage 2 的模型大量采样，筛选高质量推理数据</p></li>
+<li><p>与通用 SFT 数据合并，重新微调</p></li>
+<li><p>目的：让模型既保持推理能力，又不丧失通用能力</p></li>
+</ul>
+<p><strong>Stage 4 - 全场景 RL</strong></p>
+<ul class="simple">
+<li><p>在所有任务场景上做 RL</p></li>
+<li><p>不同场景使用不同的 reward：推理用 correctness，写作用 helpfulness，安全用 safety</p></li>
+</ul>
+<p><strong>Stage 5 - 蒸馏</strong></p>
+<ul class="simple">
+<li><p>将大模型的推理能力迁移到小模型</p></li>
+<li><p>DeepSeek 发现：蒸馏的效果 &gt; 在小模型上直接做 RL</p></li>
+</ul>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2501.12948">DeepSeek-R1</a> Section 3</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="test-time-compute-scaling">
+<h2>14.5 Test-time Compute Scaling<a class="headerlink" href="#test-time-compute-scaling" title="Link to this heading">#</a></h2>
+<section id="id9">
+<h3>推理阶段的计算量也能提升效果<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<p>传统观点认为模型能力的提升主要靠训练时的计算量（train-time compute）。
+但最新研究表明，<strong>在推理阶段投入更多计算同样可以显著提升效果</strong>。</p>
+</section>
+<section id="id10">
+<h3>主要方法<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<p><strong>1. Majority Voting（多数投票）</strong></p>
+<ul class="simple">
+<li><p>让模型对同一问题生成 N 个回答</p></li>
+<li><p>取出现次数最多的答案作为最终答案</p></li>
+<li><p>简单有效，但需要 N 次推理</p></li>
+</ul>
+<p><strong>2. Best-of-N</strong></p>
+<ul class="simple">
+<li><p>生成 N 个回答，用 verifier/reward model 选最好的</p></li>
+<li><p>效果比 majority voting 更好（有判断标准）</p></li>
+</ul>
+<p><strong>3. Tree Search（树搜索）</strong></p>
+<ul class="simple">
+<li><p>在推理过程中构建搜索树，每一步探索多个候选</p></li>
+<li><p>用 PRM 引导搜索方向（每步的得分作为启发式）</p></li>
+<li><p>计算成本最高，但效果也最好</p></li>
+</ul>
+<p><strong>4. Verification（验证）</strong></p>
+<ul class="simple">
+<li><p>模型生成答案后，让另一个模型（或自身）验证答案的正确性</p></li>
+<li><p>结合 self-correction 实现迭代优化</p></li>
+</ul>
+</section>
+<section id="scaling">
+<h3>Scaling 分析<a class="headerlink" href="#scaling" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Accuracy
+  ↑
+  │           ╱ Tree Search + PRM
+  │         ╱
+  │       ╱ Best-of-N + Verifier
+  │     ╱
+  │   ╱ Majority Voting
+  │ ╱
+  │╱ Single Pass
+  └───────────────────→ Inference Compute
+</pre></div>
+</div>
+<p>关键发现：在相同的总计算预算下，用更小的模型 + 更多推理计算，
+有时可以匹敌甚至超越更大模型的 single-pass 表现。</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute</a> (Snell et al., 2024)</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 演示 majority voting 和 best-of-N 的效果</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># 模拟一个模型在数学题上的表现</span>
+<span class="c1"># 假设模型答对的概率是 0.6</span>
+<span class="n">model_accuracy</span> <span class="o">=</span> <span class="mf">0.6</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simulate_answer</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟模型的一次回答&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s2">&quot;correct&quot;</span> <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">correct_prob</span> <span class="k">else</span> <span class="s2">&quot;wrong&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">simulate_with_score</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;模拟一次回答和对应的 reward model 分数&quot;&quot;&quot;</span>
+    <span class="n">is_correct</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">correct_prob</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="s2">&quot;correct&quot;</span> <span class="k">if</span> <span class="n">is_correct</span> <span class="k">else</span> <span class="s2">&quot;wrong&quot;</span>
+    <span class="c1"># 正确答案倾向于高分，但有噪声</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">gauss</span><span class="p">(</span><span class="mf">0.8</span> <span class="k">if</span> <span class="n">is_correct</span> <span class="k">else</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">answer</span><span class="p">,</span> <span class="n">score</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">majority_vote</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Majority voting: 生成 N 个回答，取多数&quot;&quot;&quot;</span>
+    <span class="n">answers</span> <span class="o">=</span> <span class="p">[</span><span class="n">simulate_answer</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">most_common</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">answers</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">most_common</span> <span class="o">==</span> <span class="s2">&quot;correct&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">best_of_n</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Best-of-N: 生成 N 个回答，用 reward model 选最高分的&quot;&quot;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">simulate_with_score</span><span class="p">(</span><span class="n">correct_prob</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">best</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">best</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;correct&quot;</span>
+
+<span class="c1"># 跑 1000 次实验，统计各方法准确率</span>
+<span class="n">num_trials</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">N_values</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== Test-time Compute Scaling 效果演示 ===&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;模型单次准确率: </span><span class="si">{</span><span class="n">model_accuracy</span><span class="si">:</span><span class="s2">.0%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;每个配置跑 </span><span class="si">{</span><span class="n">num_trials</span><span class="si">}</span><span class="s2"> 次实验&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;N&#39;</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">&#39;Single Pass&#39;</span><span class="si">:</span><span class="s2">&gt;12</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">&#39;Majority Vote&#39;</span><span class="si">:</span><span class="s2">&gt;14</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="s1">&#39;Best-of-N&#39;</span><span class="si">:</span><span class="s2">&gt;10</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">N_values</span><span class="p">:</span>
+    <span class="n">single</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_trials</span><span class="p">)</span> <span class="k">if</span> <span class="n">simulate_answer</span><span class="p">(</span><span class="n">model_accuracy</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;correct&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_trials</span>
+    <span class="n">mv_acc</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_trials</span><span class="p">)</span> <span class="k">if</span> <span class="n">majority_vote</span><span class="p">(</span><span class="n">model_accuracy</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="n">num_trials</span>
+    <span class="n">bon_acc</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_trials</span><span class="p">)</span> <span class="k">if</span> <span class="n">best_of_n</span><span class="p">(</span><span class="n">model_accuracy</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="n">num_trials</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">single</span><span class="si">:</span><span class="s2">&gt;12.1%</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">mv_acc</span><span class="si">:</span><span class="s2">&gt;14.1%</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">bon_acc</span><span class="si">:</span><span class="s2">&gt;10.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;观察：&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - 随着 N 增大，Majority Vote 和 Best-of-N 的准确率都显著提升&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - Best-of-N (有 reward model) 效果优于 Majority Vote&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  - 代价是推理计算量线性增长（需要 N 次推理）&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="grpotrainer">
+<h2>14.6 动手实验：使用 GRPOTrainer 训练数学推理<a class="headerlink" href="#grpotrainer" title="Link to this heading">#</a></h2>
+<p>本节使用 trl 的 GRPOTrainer，在 Qwen2.5-0.5B 上用 LoRA 做 GRPO 训练。</p>
+<p>任务：GSM8K 小学数学推理。</p>
+<p>奖励函数：检查模型输出的最终答案是否正确（Outcome Reward）。</p>
+<p>注意：此实验需要 GPU（推荐 Colab T4 或更好）。如果无 GPU，代码会给出说明。</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 检查 GPU 可用性</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+<span class="n">CUDA_AVAILABLE</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">CUDA_AVAILABLE</span><span class="p">:</span>
+    <span class="n">gpu_name</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_name</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">gpu_mem</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">get_device_properties</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">total_mem</span> <span class="o">/</span> <span class="mf">1e9</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GPU 可用: </span><span class="si">{</span><span class="n">gpu_name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">gpu_mem</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB)&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;⚠ GPU 不可用&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;本实验需要 GPU。你可以：&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. 在 Google Colab 上运行（选择 T4 GPU runtime）&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. 跳过训练部分，仅阅读代码和理论&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;以下代码会加载模型但跳过实际训练。&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;建议在 Colab 上完成完整实验。&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModelForCausalLM</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoraConfig</span><span class="p">,</span> <span class="n">TaskType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="c1"># 模型选择：Qwen2.5-0.5B（足够小，适合 T4 显存）</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Qwen/Qwen2.5-0.5B-Instruct&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;加载模型: </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+<span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
+
+<span class="k">if</span> <span class="n">CUDA_AVAILABLE</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+        <span class="n">model_name</span><span class="p">,</span>
+        <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span>
+        <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;模型加载完成，参数量: </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">M&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;无 GPU，跳过模型加载。请在 Colab 环境中运行。&quot;</span><span class="p">)</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 加载 GSM8K 数据集</span>
+<span class="c1"># GSM8K 是小学数学题数据集，每题包含 question 和 answer</span>
+
+<span class="k">if</span> <span class="n">CUDA_AVAILABLE</span><span class="p">:</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;openai/gsm8k&quot;</span><span class="p">,</span> <span class="s2">&quot;main&quot;</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s2">&quot;train[:500]&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;数据集大小: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;样例问题: </span><span class="si">{</span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;question&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;样例答案: </span><span class="si">{</span><span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;answer&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;无 GPU，跳过数据集加载。&quot;</span><span class="p">)</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># GSM8K answer 格式: &quot;推理过程 #### 最终数字答案&quot;</span>
+<span class="c1"># 我们需要提取最终数字答案用于 reward 计算</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_answer</span><span class="p">(</span><span class="n">answer_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;从 GSM8K 格式中提取最终数字答案&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;####&quot;</span> <span class="ow">in</span> <span class="n">answer_text</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">answer_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;####&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">answer_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+<span class="c1"># 测试提取函数</span>
+<span class="n">sample_answer</span> <span class="o">=</span> <span class="s2">&quot;Janet&#39;s ducks lay 16 eggs per day. She eats three. So 16 - 3 = 13. #### 13&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">提取测试: &#39;</span><span class="si">{</span><span class="n">extract_answer</span><span class="p">(</span><span class="n">sample_answer</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 定义 Reward Function</span>
+<span class="c1"># GRPOTrainer 需要一个 reward function，输入 prompts 和 completions，输出 reward 列表</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">math_reward_function</span><span class="p">(</span><span class="n">prompts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">completions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                         <span class="n">ground_truths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    数学推理的 reward function。</span>
+<span class="sd">    检查模型输出的最终答案是否与标准答案匹配。</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompts: 输入的问题列表</span>
+<span class="sd">        completions: 模型生成的回答列表</span>
+<span class="sd">        ground_truths: 标准答案列表</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        rewards: 每个 completion 的 reward（0.0 或 1.0）</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">completion</span><span class="p">,</span> <span class="n">gt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="n">ground_truths</span><span class="p">):</span>
+        <span class="c1"># 尝试从模型输出中提取数字答案</span>
+        <span class="c1"># 常见模式：&quot;答案是 X&quot;、&quot;answer is X&quot;、&quot;#### X&quot;、最后出现的数字</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-?\d+\.?\d*&#39;</span><span class="p">,</span> <span class="n">completion</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numbers</span><span class="p">:</span>
+            <span class="n">model_answer</span> <span class="o">=</span> <span class="n">numbers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="c1"># 取最后一个数字</span>
+            <span class="n">gt_clean</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;-?\d+\.?\d*&#39;</span><span class="p">,</span> <span class="n">gt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">gt_clean</span><span class="p">:</span>
+                <span class="n">gt_answer</span> <span class="o">=</span> <span class="n">gt_clean</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">model_answer</span> <span class="o">==</span> <span class="n">gt_answer</span><span class="p">:</span>
+                    <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rewards</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># 没有输出数字，给 0 分</span>
+    <span class="k">return</span> <span class="n">rewards</span>
+
+
+<span class="c1"># 测试 reward function</span>
+<span class="n">test_prompts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;What is 2 + 3?&quot;</span><span class="p">]</span>
+<span class="n">test_completions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Let me calculate. 2 + 3 = 5. The answer is 5.&quot;</span><span class="p">]</span>
+<span class="n">test_ground_truths</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;5&quot;</span><span class="p">]</span>
+
+<span class="n">reward</span> <span class="o">=</span> <span class="n">math_reward_function</span><span class="p">(</span><span class="n">test_prompts</span><span class="p">,</span> <span class="n">test_completions</span><span class="p">,</span> <span class="n">test_ground_truths</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;测试 reward function:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  问题: </span><span class="si">{</span><span class="n">test_prompts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  回答: </span><span class="si">{</span><span class="n">test_completions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reward: </span><span class="si">{</span><span class="n">reward</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 错误回答测试</span>
+<span class="n">test_wrong</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;2 + 3 = 6. The answer is 6.&quot;</span><span class="p">]</span>
+<span class="n">reward_wrong</span> <span class="o">=</span> <span class="n">math_reward_function</span><span class="p">(</span><span class="n">test_prompts</span><span class="p">,</span> <span class="n">test_wrong</span><span class="p">,</span> <span class="n">test_ground_truths</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">错误回答: </span><span class="si">{</span><span class="n">test_wrong</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Reward: </span><span class="si">{</span><span class="n">reward_wrong</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 配置并运行 GRPOTrainer</span>
+
+<span class="k">if</span> <span class="n">CUDA_AVAILABLE</span> <span class="ow">and</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">GRPOTrainer</span><span class="p">,</span> <span class="n">GRPOConfig</span>
+
+    <span class="c1"># LoRA 配置：只训练少量参数，节省显存</span>
+    <span class="n">lora_config</span> <span class="o">=</span> <span class="n">LoraConfig</span><span class="p">(</span>
+        <span class="n">task_type</span><span class="o">=</span><span class="n">TaskType</span><span class="o">.</span><span class="n">CAUSAL_LM</span><span class="p">,</span>
+        <span class="n">r</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+        <span class="n">lora_alpha</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+        <span class="n">target_modules</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;q_proj&quot;</span><span class="p">,</span> <span class="s2">&quot;v_proj&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="c1"># GRPO 训练配置</span>
+    <span class="n">grpo_config</span> <span class="o">=</span> <span class="n">GRPOConfig</span><span class="p">(</span>
+        <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./grpo_output&quot;</span><span class="p">,</span>
+        <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="o">=</span><span class="mf">5e-5</span><span class="p">,</span>
+        <span class="n">logging_steps</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">save_strategy</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="p">,</span>
+        <span class="n">report_to</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">,</span>
+        <span class="n">max_completion_length</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>   <span class="c1"># 最大生成长度</span>
+        <span class="n">num_generations</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>           <span class="c1"># 每个 prompt 生成 4 个候选（G=4）</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>             <span class="c1"># 采样温度</span>
+        <span class="n">bf16</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>                  <span class="c1"># T4 不支持 bf16，用 fp16</span>
+        <span class="n">fp16</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 准备数据集格式</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format_gsm8k</span><span class="p">(</span><span class="n">example</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;prompt&quot;</span><span class="p">:</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;ground_truth&quot;</span><span class="p">:</span> <span class="n">extract_answer</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">]),</span>
+        <span class="p">}</span>
+
+    <span class="n">train_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">format_gsm8k</span><span class="p">)</span>
+
+    <span class="c1"># GRPOTrainer 需要的 reward function 签名</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reward_fn</span><span class="p">(</span><span class="n">completions</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">prompts</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">))</span>
+        <span class="n">ground_truths</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ground_truth&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">completions</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">math_reward_function</span><span class="p">(</span><span class="n">prompts</span><span class="p">,</span> <span class="n">completions</span><span class="p">,</span> <span class="n">ground_truths</span><span class="p">)</span>
+
+    <span class="n">trainer</span> <span class="o">=</span> <span class="n">GRPOTrainer</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">=</span><span class="n">grpo_config</span><span class="p">,</span>
+        <span class="n">train_dataset</span><span class="o">=</span><span class="n">train_dataset</span><span class="p">,</span>
+        <span class="n">processing_class</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">peft_config</span><span class="o">=</span><span class="n">lora_config</span><span class="p">,</span>
+        <span class="n">reward_funcs</span><span class="o">=</span><span class="n">reward_fn</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;GRPOTrainer 初始化完成&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;配置: num_generations=</span><span class="si">{</span><span class="n">grpo_config</span><span class="o">.</span><span class="n">num_generations</span><span class="si">}</span><span class="s2">, &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;max_completion_length=</span><span class="si">{</span><span class="n">grpo_config</span><span class="o">.</span><span class="n">max_completion_length</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;数据集: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">)</span><span class="si">}</span><span class="s2"> 样本&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">开始训练（这可能需要 10-30 分钟，取决于 GPU）...&quot;</span><span class="p">)</span>
+
+    <span class="n">trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">GRPO 训练完成！&quot;</span><span class="p">)</span>
+
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;无 GPU，跳过 GRPOTrainer 训练。&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;完整的 GRPO 训练流程如下：&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;1. 加载 Qwen2.5-0.5B-Instruct&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;2. 配置 LoRA (r=16, target: q_proj, v_proj)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;3. 配置 GRPOConfig (num_generations=4, temperature=0.7)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;4. 定义 reward function (数学答案正确性检查)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;5. 创建 GRPOTrainer 并训练&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;在 Colab T4 上预计训练时间：约 10-30 分钟 (500 样本, 1 epoch)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 训练后测试：让模型做几道数学题</span>
+
+<span class="k">if</span> <span class="n">CUDA_AVAILABLE</span> <span class="ow">and</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">test_questions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Janet&#39;s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends on Sunday. How many eggs does she have left at the end of the week?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;A robe takes 2 bolts of blue fiber and half that much white fiber. How many bolts in total does it take?&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Josh decides to try flipping a house. He buys a house for $80,000 and then puts in $50,000 in repairs. This increased the value of the house by 150%. How much profit did he make?&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=== GRPO 训练后模型测试 ===&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">test_questions</span><span class="p">):</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+                <span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
+                <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                <span class="n">do_sample</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:],</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;问题 </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">q</span><span class="p">[:</span><span class="mi">80</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;回答: </span><span class="si">{</span><span class="n">response</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;无 GPU，跳过训练后测试。&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;在完整训练后，模型应该展现出：&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  1. 更结构化的推理过程（分步计算）&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  2. 更高的数学题准确率&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  3. 自我检查和纠正行为（可选）&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<section id="id11">
+<h3>GRPO 实验分析<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<p>在完成 GRPO 训练后，应关注以下指标：</p>
+<ul class="simple">
+<li><p><strong>Reward 趋势</strong>：训练过程中 reward 应逐步上升，说明模型在学到更好的推理策略</p></li>
+<li><p><strong>Completion Length</strong>：推理过程可能变长（更多 CoT），这是正常现象</p></li>
+<li><p><strong>准确率</strong>：在 GSM8K 测试集上的准确率应有所提升</p></li>
+</ul>
+<p>与第7章的 PPO 训练对比：</p>
+<ul class="simple">
+<li><p>GRPO 不需要 Critic 网络，显存开销更低</p></li>
+<li><p>GRPO 的 group baseline 比 learned baseline 更稳定（不会出现 Critic 训不好的情况）</p></li>
+<li><p>GRPO 特别适合 reward 信号明确的任务（如数学题的答案对/错）</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="id12">
+<h2>本章总结<a class="headerlink" href="#id12" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>DeepSeek-R1-Zero</strong> 证明了纯 RL（不需要 SFT）可以激发模型的推理能力</p></li>
+<li><p><strong>GRPO</strong> 用 group baseline 替代 value network，简化了 RL 训练</p></li>
+<li><p><strong>PRM</strong> 提供逐步奖励信号，比 ORM 更适合多步推理训练</p></li>
+<li><p><strong>R1 管线</strong> 通过冷启动 SFT + GRPO + 拒绝采样 + 蒸馏实现完整训练</p></li>
+<li><p><strong>Test-time compute</strong> 表明推理阶段的计算投入也能显著提升效果</p></li>
+</ol>
+<section id="id13">
+<h3>推理模型的核心范式转变<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
+<p>传统：SFT 教会模型”怎么推理” → RLHF 微调偏好</p>
+<p>新范式：RL 让模型”自己发现怎么推理” → 蒸馏传播推理能力</p>
+<p>这个范式转变的影响深远：</p>
+<ul class="simple">
+<li><p>降低了推理数据的标注成本（不需要标注推理过程）</p></li>
+<li><p>模型能发现人类未曾想到的推理策略</p></li>
+<li><p>推理能力可以通过蒸馏高效迁移到小模型</p></li>
+</ul>
+</section>
+</section>
+<section id="id14">
+<h2>参考文献<a class="headerlink" href="#id14" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://arxiv.org/abs/2501.12948">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning</a></p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2305.20050">Let’s Verify Step by Step</a> (Lightman et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2408.03314">Scaling LLM Test-Time Compute Optimally can be More Effective than Scaling Model Parameters</a> (Snell et al., 2024)</p></li>
+<li><p><a class="reference external" href="https://huggingface.co/docs/trl/main_classes/grpo_trainer">trl GRPOTrainer 文档</a></p></li>
+</ul>
+</section>
+<section id="id15">
+<h2>练习<a class="headerlink" href="#id15" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>调整 GRPO 超参</strong>：修改 <code class="docutils literal notranslate"><span class="pre">num_generations</span></code> (2, 4, 8) 和 <code class="docutils literal notranslate"><span class="pre">temperature</span></code> (0.5, 0.7, 1.0)，观察训练效果的变化</p></li>
+<li><p><strong>对比 PPO vs GRPO</strong>：在第7章的 PPO 实验和本章的 GRPO 实验中，比较显存使用、训练稳定性和最终效果</p></li>
+<li><p><strong>设计 PRM reward</strong>：修改 reward function，不仅检查最终答案，还检查中间推理步骤（提示：用正则匹配中间计算结果）</p></li>
+<li><p><strong>Test-time scaling 实验</strong>：对训练后的模型分别用 majority voting (N=1,5,10) 和 best-of-N (N=1,5,10) 评估，绘制 scaling 曲线</p></li>
+<li><p><strong>思考题</strong>：GRPO 的 group baseline 在什么情况下会失效？（提示：当所有输出的 reward 相同时会发生什么？）</p></li>
+</ol>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./notebooks"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ch13_pretraining_engineering.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">第13章：大规模预训练工程</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ch15_long_context_inference.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">第15章：长上下文与高效推理</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">前置知识</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sft-rlhf-rl">14.1 从 SFT+RLHF 到纯 RL 推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#deepseek-r1-zero-sft-rl">DeepSeek-R1-Zero 实验：跳过 SFT，直接用 RL 训练推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">关键发现</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">核心洞察</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#r1-zero">R1-Zero 的问题</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grpo-group-relative-policy-optimization">14.2 GRPO (Group Relative Policy Optimization)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#value-network">核心创新：消除 Value Network</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">GRPO 算法流程</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo">与 PPO 的关键区别</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">GRPO 直觉理解</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#process-reward-model-prm">14.3 Process Reward Model (PRM)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#outcome-rm-vs-process-rm">Outcome RM vs Process RM</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">直觉对比</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prm">PRM 对推理训练的意义</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#r1">14.4 R1 训练管线</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">各阶段要点</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-time-compute-scaling">14.5 Test-time Compute Scaling</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">推理阶段的计算量也能提升效果</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">主要方法</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scaling">Scaling 分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#grpotrainer">14.6 动手实验：使用 GRPOTrainer 训练数学推理</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id11">GRPO 实验分析</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id12">本章总结</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id13">推理模型的核心范式转变</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id14">参考文献</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id15">练习</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By LLM Training Handbook Contributors
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2026.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
