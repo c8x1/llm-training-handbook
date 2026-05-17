@@ -24,6 +24,12 @@ jobs:
       - name: Build JupyterBook
         run: |
           jupyter-book build .
+      - name: List build output
+        run: |
+          echo "=== _build/html contents ==="
+          ls -la _build/html/ || echo "No _build/html directory"
+          echo "=== file count ==="
+          find _build/html -name "*.html" | wc -l || true
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
