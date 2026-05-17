@@ -538,7 +538,8 @@ document.write(`
 </tbody>
 </table>
 </div>
-<p>参考：<a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a>, <a class="reference external" href="https://arxiv.org/abs/2306.15595">NTK-aware</a></p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a>, <a class="reference external" href="https://arxiv.org/abs/2306.15595">Position Interpolation</a> (Chen et al., 2023)</p>
+<p>注：NTK-aware interpolation 最初由社区（Reddit u/bloc97）提出，并非正式论文。</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
@@ -801,7 +802,7 @@ document.write(`
 <li><p>接受与 target 分布一致的 token，拒绝不一致的</p></li>
 </ol>
 <p><strong>关键性质：</strong> 最终输出与直接用大模型完全一致（无损加速）。</p>
-<p>参考：<a class="reference external" href="https://arxiv.org/abs/2302.01318">Fast Inference from Transformers via Speculative Decoding</a> (Leviathan et al., 2023)</p>
+<p>参考：<a class="reference external" href="https://arxiv.org/abs/2302.01318">Accelerating LLM Decoding with Speculative Sampling</a> (Chen et al., 2023)</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
@@ -813,68 +814,9 @@ document.write(`
 <span class="sd">    以概率 min(1, p_target(x) / p_draft(x)) 接受。</span>
 <span class="sd">    这保证了最终输出分布与 target 模型完全一致（无损）。</span>
 <span class="sd">    </span>
-<span class="sd">    参考：Leviathan et al., 2023 - Fast Inference from Transformers</span>
-<span class="sd">    via Speculative Decoding (arxiv 2302.01318)</span>
+<span class="sd">    参考：Chen et al., 2023 - Accelerating Large Language Model Decoding</span>
+<span class="sd">    with Speculative Sampling (arxiv 2302.01318)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">generated</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span>
-    <span class="n">total_draft_tokens</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">accepted_tokens</span> <span class="o">=</span> <span class="mi">0</span>
-    
-    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_new_tokens</span><span class="p">:</span>
-        <span class="c1"># Step 1: Draft 模型生成 k 个 token</span>
-        <span class="n">draft_tokens</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">draft_probs_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">current</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
-            <span class="n">logits</span> <span class="o">=</span> <span class="n">draft_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
-            <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-            <span class="n">draft_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-            <span class="n">draft_probs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
-            <span class="n">current</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-        <span class="n">total_draft_tokens</span> <span class="o">+=</span> <span class="n">k</span>
-        
-        <span class="c1"># Step 2: Target 模型一次前向传播评估所有 k+1 个位置</span>
-        <span class="n">target_logits</span> <span class="o">=</span> <span class="n">target_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
-        
-        <span class="c1"># Step 3: 逐个验证（论文的核心 accept/reject 逻辑）</span>
-        <span class="n">n_accepted</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># target_logits 中对应的位置索引</span>
-            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">draft_prob</span> <span class="o">=</span> <span class="n">draft_probs_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-            <span class="n">target_prob</span> <span class="o">=</span> <span class="n">target_probs</span><span class="p">[</span><span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-            
-            <span class="c1"># 核心：以 min(1, p_target / p_draft) 的概率接受</span>
-            <span class="k">if</span> <span class="n">draft_prob</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">target_prob</span> <span class="o">/</span> <span class="n">draft_prob</span><span class="p">):</span>
-                <span class="n">n_accepted</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># 拒绝：从调整分布 max(0, p_target - p_draft) 中采样修正 token</span>
-                <span class="n">adjusted</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">target_probs</span> <span class="o">-</span> <span class="n">draft_probs_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">adjusted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">adjusted</span> <span class="o">=</span> <span class="n">adjusted</span> <span class="o">/</span> <span class="n">adjusted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-                    <span class="n">correction_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">adjusted</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">correction_token</span> <span class="o">=</span> <span class="n">target_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-                <span class="k">break</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># 所有 k 个 token 都被接受，额外采样第 k+1 个 token</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span>
-            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">correction_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">target_probs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-        
-        <span class="n">accepted_tokens</span> <span class="o">+=</span> <span class="n">n_accepted</span>
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">draft_tokens</span><span class="p">[:</span><span class="n">n_accepted</span><span class="p">]:</span>
-            <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-        <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correction_token</span><span class="p">)</span>
-            
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">:</span>
-            <span class="k">break</span>
-    
-    <span class="n">acceptance_rate</span> <span class="o">=</span> <span class="n">accepted_tokens</span> <span class="o">/</span> <span class="n">total_draft_tokens</span> <span class="k">if</span> <span class="n">total_draft_tokens</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
-    <span class="k">return</span> <span class="n">generated</span><span class="p">,</span> <span class="n">acceptance_rate</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Speculative Decoding 函数已定义（论文方法：概率比 accept/reject）&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1055,10 +997,10 @@ document.write(`
 <section id="id9">
 <h2>延伸阅读<a class="headerlink" href="#id9" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a> — 高效 RoPE 上下文扩展</p></li>
-<li><p><a class="reference external" href="https://arxiv.org/abs/2306.15595">NTK-aware Interpolation</a> — NTK 感知插值</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2309.00071">YaRN</a> — 高效 RoPE 上下文扩展 (Peng et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2306.15595">Position Interpolation</a> — 位置插值 (Chen et al., 2023)</p></li>
 <li><p><a class="reference external" href="https://arxiv.org/abs/2310.01889">Ring Attention</a> — 环形注意力 (Liu et al., 2023)</p></li>
-<li><p><a class="reference external" href="https://arxiv.org/abs/2302.01318">Speculative Decoding</a> — 投机解码 (Leviathan et al., 2023)</p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2302.01318">Speculative Sampling</a> — 投机采样 (Chen et al., 2023)</p></li>
 <li><p><a class="reference external" href="https://arxiv.org/abs/2309.06180">vLLM / PagedAttention</a> — 分页注意力 (Kwon et al., 2023)</p></li>
 <li><p><a class="reference external" href="https://github.com/vllm-project/vllm">vLLM 源码</a> — 工业级实现参考</p></li>
 </ul>
