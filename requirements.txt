@@ -9,5 +9,5 @@ bitsandbytes>=0.42.0
 wandb>=0.16.0
 matplotlib>=3.8.0
 pandas>=2.2.0
-jupyter-book>=1.0.0
+jupyter-book>=1.0.0,<2.0.0
 numpy>=1.26.0
