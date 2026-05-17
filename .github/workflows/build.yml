@@ -32,9 +32,8 @@ jobs:
           jupyter-book build .
       - name: Upload artifact
         if: github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages
           path: _build/html
 
   deploy:
@@ -48,17 +47,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: _build/html
-      - name: Package for Pages
-        run: |
-          cd _build/html
-          tar -cf ../../artifact.tar .
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          artifact: artifact.tar
