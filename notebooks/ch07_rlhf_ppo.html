@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>第7章：RLHF (PPO) &#8212; LLM Training Handbook</title>
+    <title>注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。 &#8212; LLM Training Handbook</title>
   
   
   
@@ -187,7 +187,8 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+
 <li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
@@ -436,7 +437,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>第7章：RLHF (PPO)</h1>
+    <h1>注意：本章代码兼容 trl >= 0.16。旧版 trl (< 0.12) 使用完全不同的 PPOTrainer API。</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -446,12 +447,17 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#rlhf-ppo">第7章：RLHF (PPO)</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo-in-rlhf">PPO in RLHF 速览</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo">分析 PPO 训练指标</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">练习</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">延伸阅读</a></li>
 </ul>
+</li>
+</ul>
+
             </nav>
         </div>
     </div>
@@ -462,7 +468,10 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="rlhf-ppo">
+  <section class="tex2jax_ignore mathjax_ignore" id="trl-0-16-trl-0-12-ppotrainer-api">
+<h1>注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。<a class="headerlink" href="#trl-0-16-trl-0-12-ppotrainer-api" title="Link to this heading">#</a></h1>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="rlhf-ppo">
 <h1>第7章：RLHF (PPO)<a class="headerlink" href="#rlhf-ppo" title="Link to this heading">#</a></h1>
 <section id="id1">
 <h2>本章目标<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
@@ -486,9 +495,10 @@ document.write(`
 </section>
 <section id="ppo-in-rlhf">
 <h2>PPO in RLHF 速览<a class="headerlink" href="#ppo-in-rlhf" title="Link to this heading">#</a></h2>
-<p>RLHF 的三个组件：</p>
+<p>RLHF PPO 实际需要 <strong>4 个模型</strong>：</p>
 <ol class="arabic simple">
 <li><p><strong>Policy Model (Actor)</strong>: 我们要优化的 LLM（SFT 后的模型）</p></li>
+<li><p><strong>Value Model (Critic)</strong>: 预测状态价值函数，用于计算 GAE (Generalized Advantage Estimation) advantage。通常与 Policy Model 共享 backbone</p></li>
 <li><p><strong>Reward Model</strong>: 给 (prompt, response) 打分</p></li>
 <li><p><strong>Reference Model</strong>: SFT 模型的冻结副本，用于计算 KL penalty</p></li>
 </ol>
@@ -497,6 +507,7 @@ document.write(`
 <li><p>Policy Gradient: 鼓励高分回答，抑制低分回答</p></li>
 <li><p>Clipping: 限制策略更新幅度，防止训崩</p></li>
 <li><p>KL Penalty: 确保模型不会偏离 reference 太远（保持语言能力）</p></li>
+<li><p>GAE Advantage: Value Model 预测状态价值，结合实际 reward 计算 advantage，降低方差</p></li>
 </ul>
 <p>参考：<a class="reference external" href="https://arxiv.org/abs/2203.02155">InstructGPT</a>, <a class="reference external" href="https://arxiv.org/abs/1707.06347">PPO</a></p>
 <div class="cell docutils container">
@@ -510,7 +521,7 @@ document.write(`
 <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
 <span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token</span>
 
-<span class="c1"># Policy model</span>
+<span class="c1"># Policy model (Actor)</span>
 <span class="n">policy_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
     <span class="n">model_name</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span>
 <span class="p">)</span>
@@ -526,19 +537,25 @@ document.write(`
     <span class="n">model_name</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span>
 <span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;三个模型加载完成: Policy, Reference, Reward&quot;</span><span class="p">)</span>
+<span class="c1"># Value model (Critic) — 通常与 Policy Model 共享 backbone</span>
+<span class="c1"># 这里用独立的 Value Head 示例；实际中可通过 value_model=policy_model 共享</span>
+<span class="n">value_model</span> <span class="o">=</span> <span class="n">AutoModelForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+    <span class="n">model_name</span><span class="p">,</span> <span class="n">torch_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">device_map</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;四个模型加载完成: Policy, Reference, Reward, Value&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ppo_config</span> <span class="o">=</span> <span class="n">PPOConfig</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 新版 TRL PPOConfig</span>
+<span class="n">ppo_config</span> <span class="o">=</span> <span class="n">PPOConfig</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./ppo_output&quot;</span><span class="p">,</span>
+    <span class="n">per_device_train_batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
     <span class="n">learning_rate</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
-    <span class="n">mini_batch_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">ppo_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">num_ppo_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>        <span class="c1"># 旧名 ppo_epochs</span>
     <span class="n">kl_coef</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -554,12 +571,15 @@ document.write(`
 
 <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">extract_prompt</span><span class="p">)</span>
 
+<span class="c1"># 新版 TRL PPOTrainer — 使用标准 Trainer 风格接口</span>
 <span class="n">ppo_trainer</span> <span class="o">=</span> <span class="n">PPOTrainer</span><span class="p">(</span>
-    <span class="n">config</span><span class="o">=</span><span class="n">ppo_config</span><span class="p">,</span>
+    <span class="n">args</span><span class="o">=</span><span class="n">ppo_config</span><span class="p">,</span>
+    <span class="n">processing_class</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>       <span class="c1"># 旧名 tokenizer</span>
     <span class="n">model</span><span class="o">=</span><span class="n">policy_model</span><span class="p">,</span>
     <span class="n">ref_model</span><span class="o">=</span><span class="n">ref_model</span><span class="p">,</span>
-    <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
-    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+    <span class="n">reward_model</span><span class="o">=</span><span class="n">reward_model</span><span class="p">,</span>        <span class="c1"># 新增必需参数</span>
+    <span class="n">train_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>            <span class="c1"># 旧名 dataset</span>
+    <span class="n">value_model</span><span class="o">=</span><span class="n">value_model</span><span class="p">,</span>          <span class="c1"># 新增必需参数（通常与 policy 共享 backbone）</span>
 <span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PPOTrainer 初始化完成&quot;</span><span class="p">)</span>
 </pre></div>
@@ -568,34 +588,15 @@ document.write(`
 </div>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
-
-<span class="n">generation_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;max_new_tokens&quot;</span><span class="p">:</span> <span class="mi">64</span><span class="p">,</span>
-    <span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
-    <span class="s2">&quot;do_sample&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-<span class="p">}</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 新版 TRL PPOTrainer 使用标准 Trainer 接口</span>
+<span class="c1"># 调用 train() 即可完成完整的 PPO 训练流程：</span>
+<span class="c1">#   1. 生成 response</span>
+<span class="c1">#   2. 计算 reward（通过 reward_model）</span>
+<span class="c1">#   3. 计算 GAE advantage（通过 value_model）</span>
+<span class="c1">#   4. 执行 PPO clipped update</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;开始 PPO 训练（这可能需要几分钟）...&quot;</span><span class="p">)</span>
-<span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">ppo_trainer</span><span class="o">.</span><span class="n">dataloader</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;PPO training&quot;</span><span class="p">):</span>
-        <span class="n">query_tensors</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;input_ids&quot;</span><span class="p">]</span>
-
-        <span class="c1"># 1. Generate responses</span>
-        <span class="n">response_tensors</span> <span class="o">=</span> <span class="n">ppo_trainer</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">query_tensors</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">)</span>
-
-        <span class="c1"># 2. Compute rewards</span>
-        <span class="n">texts</span> <span class="o">=</span> <span class="p">[</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">q</span><span class="p">,</span> <span class="n">r</span><span class="p">]))</span> <span class="k">for</span> <span class="n">q</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">query_tensors</span><span class="p">,</span> <span class="n">response_tensors</span><span class="p">)]</span>
-        <span class="n">reward_inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">texts</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                                  <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">reward_model</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-            <span class="n">rewards</span> <span class="o">=</span> <span class="n">reward_model</span><span class="p">(</span><span class="o">**</span><span class="n">reward_inputs</span><span class="p">)</span><span class="o">.</span><span class="n">logits</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-        <span class="n">rewards</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rewards</span><span class="p">]</span>
-
-        <span class="c1"># 3. PPO update</span>
-        <span class="n">stats</span> <span class="o">=</span> <span class="n">ppo_trainer</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">query_tensors</span><span class="p">,</span> <span class="n">response_tensors</span><span class="p">,</span> <span class="n">rewards</span><span class="p">)</span>
-        <span class="n">ppo_trainer</span><span class="o">.</span><span class="n">log_stats</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">rewards</span><span class="p">)</span>
-
+<span class="n">ppo_trainer</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;PPO 训练完成&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -696,12 +697,17 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#rlhf-ppo">第7章：RLHF (PPO)</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">本章目标</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo-in-rlhf">PPO in RLHF 速览</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ppo">分析 PPO 训练指标</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">练习</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">延伸阅读</a></li>
 </ul>
+</li>
+</ul>
+
   </nav></div>
 
 </div></div>

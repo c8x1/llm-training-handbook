@@ -187,7 +187,8 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+
 <li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
@@ -655,6 +656,7 @@ document.write(`
     <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
 
     <span class="c1"># FP16</span>
+    <span class="c1"># 注意：这里仅用于对比显存占用。实际训练中应使用 AMP（autocast），而非手动 .half()，以避免数值不稳定</span>
     <span class="n">model_fp16</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">GPTConfig</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">128</span><span class="p">))</span><span class="o">.</span><span class="n">half</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
     <span class="n">measure_memory</span><span class="p">(</span><span class="n">model_fp16</span><span class="p">,</span> <span class="s2">&quot;FP16&quot;</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
@@ -666,14 +668,14 @@ document.write(`
 <div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">torch.cuda.amp</span><span class="w"> </span><span class="kn">import</span> <span class="n">autocast</span><span class="p">,</span> <span class="n">GradScaler</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">torch.amp</span><span class="w"> </span><span class="kn">import</span> <span class="n">autocast</span><span class="p">,</span> <span class="n">GradScaler</span>
 
     <span class="n">model</span> <span class="o">=</span> <span class="n">GPT</span><span class="p">(</span><span class="n">GPTConfig</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">65</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span> <span class="n">n_layer</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_embd</span><span class="o">=</span><span class="mi">128</span><span class="p">))</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
     <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">3e-4</span><span class="p">)</span>
-    <span class="n">scaler</span> <span class="o">=</span> <span class="n">GradScaler</span><span class="p">()</span>
+    <span class="n">scaler</span> <span class="o">=</span> <span class="n">GradScaler</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
 
     <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">65</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">128</span><span class="p">))</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-    <span class="k">with</span> <span class="n">autocast</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">autocast</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">):</span>
         <span class="n">logits</span><span class="p">,</span> <span class="n">loss</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
     <span class="n">scaler</span><span class="o">.</span><span class="n">scale</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
     <span class="n">scaler</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>

@@ -187,7 +187,8 @@
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">第5章：SFT 指令微调</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+
 <li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
@@ -544,6 +545,7 @@ document.write(`
 <div class="cell_input docutils container">
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">trl</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTTrainer</span><span class="p">,</span> <span class="n">SFTConfig</span>
 
+<span class="c1"># 注意：trl &gt;= 0.16 中 max_seq_length 已更名为 max_length，如遇报错请修改</span>
 <span class="n">training_args</span> <span class="o">=</span> <span class="n">SFTConfig</span><span class="p">(</span>
     <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;./sft_output&quot;</span><span class="p">,</span>
     <span class="n">num_train_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -602,18 +604,24 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss_with_mask</span><span class="p">(</span><span class="n">logits</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">response_start_positions</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;只在 response 部分计算 loss&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;只在 response 部分计算 loss。</span>
+<span class="sd">    </span>
+<span class="sd">    关键：shift_logits[i] 预测的是位置 i+1 的 token，</span>
+<span class="sd">    所以 response 从位置 start 开始时，对应的 label 从 start 开始，</span>
+<span class="sd">    但 shift 后 index=start-1 的 label 是位置 start 的 token（response 第一个 token）。</span>
+<span class="sd">    因此 mask 应从 max(start-1, 0) 开始。</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">shift_logits</span> <span class="o">=</span> <span class="n">logits</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
     <span class="n">shift_labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
     <span class="n">loss_fct</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
     <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fct</span><span class="p">(</span><span class="n">shift_logits</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">shift_logits</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)),</span> <span class="n">shift_labels</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
     <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">shift_labels</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">response_start_positions</span><span class="p">):</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">start</span><span class="p">:]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">mask</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">start</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">masked_loss</span> <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">shift_labels</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span>
     <span class="k">return</span> <span class="n">masked_loss</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-<span class="c1"># 示例</span>
+<span class="c1"># 演示</span>
 <span class="n">logits</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>  <span class="c1"># batch=2, seq_len=10, vocab=100</span>
 <span class="n">labels</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
 <span class="n">response_starts</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>  <span class="c1"># response 从第 3/5 个 token 开始</span>

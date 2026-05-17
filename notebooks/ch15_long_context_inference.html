@@ -189,7 +189,8 @@
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="ch05_sft.html">第5章：SFT 指令微调</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch06_reward_modeling.html">第6章：Reward Modeling</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">第7章：RLHF (PPO)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch07_rlhf_ppo.html">注意：本章代码兼容 trl &gt;= 0.16。旧版 trl (&lt; 0.12) 使用完全不同的 PPOTrainer API。</a></li>
+
 <li class="toctree-l1"><a class="reference internal" href="ch08_dpo.html">第8章：DPO 直接偏好优化</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Part III - 生产部署</span></p>
@@ -602,20 +603,30 @@ document.write(`
     <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
 
 <span class="c1"># 策略3: YaRN</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">,</span> <span class="n">temp_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;YaRN：NTK + 注意力温度调整。</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">seq_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;YaRN：NTK-aware + 注意力温度调整。</span>
 <span class="sd">    </span>
-<span class="sd">    在 NTK-aware 基础上，对注意力分数施加温度缩放。</span>
-<span class="sd">    temp_factor &gt; 1 使得注意力更集中在近处。</span>
+<span class="sd">    与 NTK-aware 的关键区别：</span>
+<span class="sd">    1. 使用 NTK-by-parts：对不同频率段使用不同插值策略</span>
+<span class="sd">       （高频段保留原始频率，低频段做插值）</span>
+<span class="sd">    2. 引入注意力温度因子 temp = sqrt(scale_factor) + 常数，</span>
+<span class="sd">       使得注意力更集中在近处，缓解长距离注意力退化</span>
+<span class="sd">    </span>
+<span class="sd">    这里是简化版：使用 NTK base 调整 + 温度因子。</span>
+<span class="sd">    完整版 YaRN 还包含更复杂的频率分段策略。</span>
+<span class="sd">    参考：https://arxiv.org/abs/2309.00071</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">base_new</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="p">(</span><span class="n">scale_factor</span> <span class="o">**</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">/</span> <span class="p">(</span><span class="n">head_dim</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)))</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">base_new</span> <span class="o">**</span> <span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">head_dim</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span> <span class="o">/</span> <span class="n">head_dim</span><span class="p">))</span>
     <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">seq_len</span><span class="p">)</span><span class="o">.</span><span class="n">float</span><span class="p">()</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">freqs</span><span class="p">)</span>
     <span class="n">freqs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">freqs</span><span class="p">,</span> <span class="n">freqs</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">()</span>
+    <span class="c1"># YaRN 的关键创新：温度因子</span>
+    <span class="n">temp_factor</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">scale_factor</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span>
+    <span class="k">return</span> <span class="n">freqs</span><span class="o">.</span><span class="n">cos</span><span class="p">(),</span> <span class="n">freqs</span><span class="o">.</span><span class="n">sin</span><span class="p">(),</span> <span class="n">temp_factor</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;三种缩放策略函数已定义&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;注意：YaRN 额外返回 temp_factor，需要在注意力计算中应用&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -661,15 +672,16 @@ document.write(`
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_ntk</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;NTK-aware Interpolation&#39;</span><span class="p">)</span>
 
-<span class="c1"># YaRN</span>
-<span class="n">cos_yarn</span><span class="p">,</span> <span class="n">sin_yarn</span> <span class="o">=</span> <span class="n">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">,</span> <span class="n">temp_factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="c1"># YaRN（注意：额外应用温度因子到注意力分数）</span>
+<span class="n">cos_yarn</span><span class="p">,</span> <span class="n">sin_yarn</span><span class="p">,</span> <span class="n">yarn_temp</span> <span class="o">=</span> <span class="n">rope_yarn</span><span class="p">(</span><span class="n">head_dim</span><span class="p">,</span> <span class="n">test_len</span><span class="p">,</span> <span class="n">scale_factor</span><span class="p">)</span>
 <span class="n">cos_y</span> <span class="o">=</span> <span class="n">cos_yarn</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">sin_y</span> <span class="o">=</span> <span class="n">sin_yarn</span><span class="p">[:</span><span class="n">test_len</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">q_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">cos_y</span><span class="p">,</span> <span class="n">sin_y</span><span class="p">)</span>
 <span class="n">k_r</span> <span class="o">=</span> <span class="n">apply_rotary_emb</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">cos_y</span><span class="p">,</span> <span class="n">sin_y</span><span class="p">)</span>
-<span class="n">att_yarn</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># YaRN 关键：注意力分数除以温度因子，使注意力更集中</span>
+<span class="n">att_yarn</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">((</span><span class="n">q_r</span> <span class="o">@</span> <span class="n">k_r</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">head_dim</span><span class="p">)</span> <span class="o">*</span> <span class="n">yarn_temp</span><span class="p">),</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">att_yarn</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">)</span>
-<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;YaRN&#39;</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;YaRN (temp=</span><span class="si">{</span><span class="n">yarn_temp</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="o">.</span><span class="n">flat</span><span class="p">:</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Key 位置&#39;</span><span class="p">)</span>
@@ -792,10 +804,17 @@ document.write(`
 <p>参考：<a class="reference external" href="https://arxiv.org/abs/2302.01318">Fast Inference from Transformers via Speculative Decoding</a> (Leviathan et al., 2023)</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">speculative_decode</span><span class="p">(</span><span class="n">draft_model_call</span><span class="p">,</span> <span class="n">target_model_call</span><span class="p">,</span> <span class="n">prompt_ids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;概念演示 Speculative Decoding。</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">speculative_decode</span><span class="p">(</span><span class="n">draft_model_call</span><span class="p">,</span> <span class="n">target_model_call</span><span class="p">,</span> <span class="n">prompt_ids</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Speculative Decoding 概念演示（论文方法）。</span>
 <span class="sd">    </span>
-<span class="sd">    draft_model_call/target_model_call: 接受 token ids，返回 logits 的函数</span>
+<span class="sd">    核心验证逻辑：对每个 draft token x，</span>
+<span class="sd">    以概率 min(1, p_target(x) / p_draft(x)) 接受。</span>
+<span class="sd">    这保证了最终输出分布与 target 模型完全一致（无损）。</span>
+<span class="sd">    </span>
+<span class="sd">    参考：Leviathan et al., 2023 - Fast Inference from Transformers</span>
+<span class="sd">    via Speculative Decoding (arxiv 2302.01318)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">generated</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span>
     <span class="n">total_draft_tokens</span> <span class="o">=</span> <span class="mi">0</span>
@@ -804,39 +823,50 @@ document.write(`
     <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_new_tokens</span><span class="p">:</span>
         <span class="c1"># Step 1: Draft 模型生成 k 个 token</span>
         <span class="n">draft_tokens</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">draft_probs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">draft_probs_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">current</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
             <span class="n">logits</span> <span class="o">=</span> <span class="n">draft_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
             <span class="n">probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">logits</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
             <span class="n">draft_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-            <span class="n">draft_probs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
+            <span class="n">draft_probs_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>
             <span class="n">current</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="n">total_draft_tokens</span> <span class="o">+=</span> <span class="n">k</span>
         
-        <span class="c1"># Step 2: Target 模型一次前向传播评估所有 k 个 token</span>
+        <span class="c1"># Step 2: Target 模型一次前向传播评估所有 k+1 个位置</span>
         <span class="n">target_logits</span> <span class="o">=</span> <span class="n">target_model_call</span><span class="p">(</span><span class="n">current</span><span class="p">)</span>
         
-        <span class="c1"># Step 3: 逐个验证</span>
+        <span class="c1"># Step 3: 逐个验证（论文的核心 accept/reject 逻辑）</span>
         <span class="n">n_accepted</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
-            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="c1"># 简化验证：如果 draft 选的是 target 概率最高的 token，就接受</span>
-            <span class="n">target_top1</span> <span class="o">=</span> <span class="n">target_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">target_top1</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># target_logits 中对应的位置索引</span>
+            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">draft_prob</span> <span class="o">=</span> <span class="n">draft_probs_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">target_prob</span> <span class="o">=</span> <span class="n">target_probs</span><span class="p">[</span><span class="n">draft_tokens</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            
+            <span class="c1"># 核心：以 min(1, p_target / p_draft) 的概率接受</span>
+            <span class="k">if</span> <span class="n">draft_prob</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">target_prob</span> <span class="o">/</span> <span class="n">draft_prob</span><span class="p">):</span>
                 <span class="n">n_accepted</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># 拒绝：用 target 的选择替代，丢弃后续 draft tokens</span>
+                <span class="c1"># 拒绝：从调整分布 max(0, p_target - p_draft) 中采样修正 token</span>
+                <span class="n">adjusted</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="n">target_probs</span> <span class="o">-</span> <span class="n">draft_probs_list</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">adjusted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">adjusted</span> <span class="o">=</span> <span class="n">adjusted</span> <span class="o">/</span> <span class="n">adjusted</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+                    <span class="n">correction_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">adjusted</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">correction_token</span> <span class="o">=</span> <span class="n">target_probs</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
                 <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 所有 k 个 token 都被接受，额外采样第 k+1 个 token</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">k</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">target_probs</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">correction_token</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">multinomial</span><span class="p">(</span><span class="n">target_probs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
         
         <span class="n">accepted_tokens</span> <span class="o">+=</span> <span class="n">n_accepted</span>
-        <span class="c1"># 接受的 token + target 的修正 token</span>
-        <span class="n">correction_token</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">target_logits</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">+</span> <span class="n">n_accepted</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">draft_tokens</span><span class="p">[:</span><span class="n">n_accepted</span><span class="p">]:</span>
             <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">n_accepted</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
-            <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correction_token</span><span class="p">)</span>
+        <span class="n">generated</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correction_token</span><span class="p">)</span>
             
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">generated</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt_ids</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_new_tokens</span><span class="p">:</span>
             <span class="k">break</span>
@@ -844,7 +874,7 @@ document.write(`
     <span class="n">acceptance_rate</span> <span class="o">=</span> <span class="n">accepted_tokens</span> <span class="o">/</span> <span class="n">total_draft_tokens</span> <span class="k">if</span> <span class="n">total_draft_tokens</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
     <span class="k">return</span> <span class="n">generated</span><span class="p">,</span> <span class="n">acceptance_rate</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Speculative Decoding 函数已定义（概念演示版本）&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Speculative Decoding 函数已定义（论文方法：概率比 accept/reject）&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
